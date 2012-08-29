@@ -1,12 +1,11 @@
-#define ZERO (0)
-#define ONE (1)
-#define print1 {System.out.println(ONE);} 
-#define print0 {System.out.println(ZERO);} 
-#define LARGE (9999)
-#define INPUT (20)
+#define ZERO() (0+0)
+#define ONE() (1+0)
+#define print(arg) {System.out.println(arg);} 
+#define LARGE() (9999+0)
+#define INPUT() (20+0)
 class BinarySearch{
     public static void main(String[] a){
-	System.out.println(new BS().Start(INPUT));
+	System.out.println(new BS().Start(INPUT()));
     }
 }
 // This class contains an array of integers and
@@ -24,22 +23,22 @@ class BS{
 	int aux02 ;
 	aux01 = this.Init(sz);
 	aux02 = this.Print();
-	if (this.Search(8)) {print1();}
-	else {print0();}
-	if (this.Search(19)) {print1();}
-	else {print0();}
-	if (this.Search(20)) {print1();}
-	else {print0();}
-	if (this.Search(21)) {print1();}
-	else {print0();}
-	if (this.Search(37)) {print1();}
-	else {print0();}
-	if (this.Search(38)) {print1();}
-	else {print0();}
-	if (this.Search(39)) {print1();}
-	else {print0();}
-	if (this.Search(50)) {print1();}
-	else {print0();}
+	if (this.Search(8)) {print(ONE());}
+	else {print(ZERO());}
+	if (this.Search(19)) {print(ONE());}
+	else {print(ZERO());}
+	if (this.Search(20)) {print(ONE());}
+	else {print(ZERO());}
+	if (this.Search(21)) {print(ONE());}
+	else {print(ZERO());}
+	if (this.Search(37)) {print(ONE());}
+	else {print(ZERO());}
+	if (this.Search(38)) {print(ONE());}
+	else {print(ZERO());}
+	if (this.Search(39)) {print(ONE());}
+	else {print(ZERO());}
+	if (this.Search(50)) {print(ONE());}
+	else {print(ZERO());}
 
 	return 999 ;
     }
@@ -121,7 +120,7 @@ class BS{
 	    System.out.println(number[j]);
 	    j = j + 1 ;
 	}
-	System.out.println(LARGE);
+	System.out.println(LARGE());
 	return 0 ;
     }
     
@@ -138,7 +137,7 @@ class BS{
 	
 	j = 1 ;
 	k = size + 1 ;
-	while (j < (size)) {
+	while (j < (size+1)) {
 	    aux01 = 2 * j ;
 	    aux02 = k - 3 ;
 	    number[j] = aux01 + aux02 ;

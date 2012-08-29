@@ -1,4 +1,4 @@
-#define ZERO (0)
+#define ZERO() (0+0)
 class Test{
     public static void main(String[] a){
         System.out.println(new A().run());
@@ -6,6 +6,6 @@ class Test{
 }
 class A {
     public int run(){
-        return ZERO + 1;
+        return ZERO();
     }
 }
