@@ -1,8 +1,8 @@
 %{
 #include<stdio.h>
-int i = 1;
+#include<stdlib.h>
 extern FILE* yyin;
-
+void yyerror(const char *s);
 extern int yyparse();
 %}
 
@@ -12,6 +12,7 @@ extern int yyparse();
 	char  *kw; // such as class, int, boolean etc
 	char *op; // such as +, -, * etc
 	char *id; // identifiers
+	char *str;
 }
 
 %token <ival> INTVAL
@@ -19,9 +20,7 @@ extern int yyparse();
 %token <kw> KEYWORD
 %token <op> OPERATOR
 %token <id> IDENTIFIER
-%token END_OF_FILE
 %token THIS
-%token MAIN
 %token NEW
 %token RETURN
 %token CLASS
@@ -36,122 +35,146 @@ extern int yyparse();
 %token WHILE
 %token EXTENDS
 %token STRING
-%token LENGTH
-%token SYSTEM
-%token OUT
-%token PRINTLN
+
 %left '<' '>' '=' NE LE GE
 %left '+' '-'
 %left '*' '/' '%'
-//%type <bval> BE
-//%type <bval> PE2
-//%type <ival> PE1
-%type <ival> IE
-%type <ival> IT
-%type <ival> INTF
+
+%initial-action {
+char* buffer = (char *)malloc(100000*sizeof(char));
+}
 
 %% 
 
 // Grammar section.  Add your rules here.
 // Example rule to parse empty classes. 
 //macrojava: CLASS IDENTIFIER '{' '}' { printf ("Parsed the empty class successfully!");}
-G : M Tstar END_OF_FILE
-M  : 	CLASS IDENTIFIER '{' PUBLIC STATIC VOID MAIN '(' STRING '['']' IDENTIFIER ')' '{' SYSTEM'.'OUT'.'PRINTLN '(' IE ')'';' '}' '}' { printf ("class %s {\n\t public static void main (String [] %s {\n\t\tSystem.out.println(\"Expression is : %d \" ); \n\t} \n}",$2,$12,$21);}
-    ;
+Goal        : Macros MainClass TypeDeclarationList                                      {sprintf(stdin,"%s %s %s",$1,$2,$3)}
+            ;
+      
+          
+Macros      : Macros MacroExpression                                                    {sprintf(buffer,"%s %s",$1,$2); $$ = strdup(buffer);}
+            | Macros MacroStatement                                                     {sprintf(buffer,"%s %s",$1,$2); $$ = strdup(buffer);}
+            | /*empty*/                                                                 {sprintf(buffer,""); $$ = strdup(buffer);}
+            ;
+            
+MacroStatement  : '#' DEFINE IDENTIFIER '(' IdentifierList ')' '{' Statements '}'       {sprintf(buffer,"#define %s(%s) {%s}",$3,$5,$8); $$ = strdup(buffer);}
+                ;
 
-T 	 : 	CLASS IDENTIFIER '{' TIstar MEstar '}'{printf("Applying production T");}
-	 | 	CLASS IDENTIFIER EXTENDS IDENTIFIER '{' TIstar MEstar "}"   {printf("Applying production T");}
-     ;
+MacroExpression : '#' DEFINE IDENTIFIER '(' IdentifierList ')' '(' Expression ')'       {sprintf(buffer,"#define %s(%s) {%s}",$3,$5,$8); $$ = strdup(buffer);}
+                ;  
 
-Tstar : Tstar T 
-      |
+IdentifierList  :  IDENTIFIER MoreIdentifiers                                           {sprintf(buffer,"%s %s",$1,$2); $$ = strdup(buffer);}
+                |  /*empty*/                                                            {sprintf(buffer,""); $$ = strdup(buffer);}
+                ;
+
+MoreIdentifiers :  MoreIdentifiers "," IDENTIFIER                                       {sprintf(buffer,"%s, %s",$1,$3); $$ = strdup(buffer);}
+                |  /*empty*/                                                            {sprintf(buffer,""); $$ = strdup(buffer);}
+                ;
+                
+MainClass    : 	CLASS IDENTIFIER '{'                                                    
+                    PUBLIC STATIC VOID IDENTIFIER '(' STRING  '['']' IDENTIFIER ')' '{' 
+                        IDENTIFIER '.' IDENTIFIER '.' IDENTIFIER '(' Expression ')'';' 
+                    '}' 
+                '}'    
+                {   
+                    if( (strcmp($15,"System") & strcmp($17,"out")  & strcmp($19,"println")) == 0) {
+                        sprintf (buffer ,"class %s {\n\t public static void main (String [] %s  {\n\t\tSystem.out.println(\"Expression \" ); \n\t} \n}",$2,$12);
+                        $$ = strdup(buffer);
+                    } else yyerror("ERROR : System.out.println not found.\n")  
+                }
+            ;
+
+TypeDeclarationList : TypeDeclarationList CLASS IDENTIFIER '{' VariableDeclarations MethodDeclarations '}'      
+                      {
+                          sprintf(buffer,"%s class %s {\n\t %s \n\n\t %s }\n",$1,$3,$5,$6); 
+                          $$ = strdup(buffer);
+	                  }
+	                | TypeDeclarationList CLASS IDENTIFIER EXTENDS IDENTIFIER '{' VariableDeclarations MethodDeclarations '}' 
+	                {
+                          sprintf(buffer,"%s class %s extends %s {\n\t %s \n\n\t %s }\n",$1,$3,$5,$7,$8); 
+                          $$ = strdup(buffer);
+	                  }
+                    | /*empty*/              {sprintf(buffer,""); $$ = strdup(buffer);}
+                    ;
+
+VariableDeclarations :  VariableDeclarations Type IDENTIFIER ';'    {sprintf(buffer,"%s %s %s;\n",$1,$2,$3); $$ = strdup(buffer);}
+                     | /*empty*/             {sprintf(buffer,""); $$ = strdup(buffer);}
+                     ;
+
+MethodDeclarations : MethodDeclarations PUBLIC Type IDENTIFIER '(' Arguments ')' '{' VariableDeclarations Statements RETURN Expression ';' '}' 
+                    {
+                        sprintf(buffer,"%s public %s %s %s(%s) {%s %s return %s;\n}",$1,$3,$4,$5,$6,$9,$10,$12); 
+                        $$ = strdup(buffer);
+                    } 
+                  | MethodDeclarations PUBLIC Type IDENTIFIER '(' Arguments ')' '{' VariableDeclarations Statements RETURN PrimaryExpression ';' '}' {} 
+                  | /*empty*/                {sprintf(buffer,""); $$ = strdup(buffer);}
+                    
+                   ;
+Arguments	: /* Empty */                     {sprintf(buffer,""); $$ = strdup(buffer);}
+	  	| Type IDENTIFIER MoreArguments     {sprintf(buffer,"%s %s %s",$1,$2,$3); $$ = strdup(buffer);}
+	  	;
+	  	
+MoreArguments : MoreArguments ',' Type IDENTIFIER   {sprintf(buffer,"%s, %s %s",$1,$3,$4); $$ = strdup(buffer);}
+	      | /*Empty*/                         {sprintf(buffer,""); $$ = strdup(buffer);}
+	      ;
+
+Type 	: INT '[' ']'                           {sprintf(buffer,"int []"); $$ = strdup(buffer);}
+	| BOOLEAN                                   {sprintf(buffer,"boolean"); $$ = strdup(buffer);}
+	| INT                                       {sprintf(buffer,"int"); $$ = strdup(buffer);}
+	| IDENTIFIER                                {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
+	;
+
+
+Statements : '{'  Statements  '}' Statements                                            {sprintf(buffer,"{\n %s } %s",$2, $4); $$ = strdup(buffer);}
+	  | IDENTIFIER '=' Expr ';' Statements {}                                           {sprintf(buffer,"%s = %s ;\n %s",$1,$3,$5); $$ = strdup(buffer);}
+	  | IDENTIFIER '[' Expr ']' '=' Expr ';' Statements {}                              {sprintf(buffer,"%s[%s] = %s; %s",$1,$3,$6,$8); $$ = strdup(buffer);}
+	  | IF '(' Expr ')' Statements                                                      {sprintf(buffer,"if (%s) %s",$3,$5); $$ = strdup(buffer);}
+	  | IF '(' Expr ')' Statements ELSE Statements                                      {sprintf(buffer,"if (%s) %s else %s",$1); $$ = strdup(buffer);}
+      | WHILE '(' Expr ')' Statements                                                   {sprintf(buffer,"while (%s) %s; \n %s",$1,$5); $$ = strdup(buffer);}
+      | IDENTIFIER dotIdentifiers '('  ')' ';' Statements                               {sprintf(buffer,"%s%s(); \n %s",$1,$2,$6); $$ = strdup(buffer);}
+      |	IDENTIFIER dotIdentifiers '(' Expr MoreExpressions ')' ';' Statements            {sprintf(buffer,"%s%s(%s %s); \n %s",$1,$2,$4,$5,$8); $$ = strdup(buffer);}
+      | /*empty*/                                                                        {sprintf(buffer,""); $$ = strdup(buffer);}
+      | ';'                                                                              {sprintf(buffer,";"); $$ = strdup(buffer);}
       ;
 
-Type :	INT '[' ']' 
-	 | 	BOOLEAN
-	 | 	INT 
-	 | 	IDENTIFIER  
-	 ;
-
-TIstar : TIstar Type IDENTIFIER ';' 
-     |
-     ;
-     
-commaTIstar  : commaTIstar ',' Type IDENTIFIER 
-             | 
-             ;
-
-args  :    
-      | Type IDENTIFIER commaTIstar
-      ;
-ME 	 : 	PUBLIC Type IDENTIFIER '(' args ')' '{' TIstar StatementStar RETURN IE ';' '}'   
-     ;   
-     
-MEstar : MEstar ME  {printf("Applying production Mestar");}
-       |
-       ;
-  
-IE   : IE '+' IT 		{$$ = $1+$3;printf("----%d----\n",$$);}
-	 | IE '-' IT	    {$$ = $1-$3;printf("----%d----\n",$$);}
-     | IT			    {$$=$1;}
+Expr : Expression                                                                       {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
+     | PrimaryExpression                                                                {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
      ;
 
-IT   : INTF			{$$=$1;}
-     | IT '*' INTF		{ $$ = $1 * $3;printf("----%d----\n",$$);} 
-     | IT '/' INTF      { $$ = $1 / $3; printf("----%d----\n",$$);}
-     | IT '%' INTF      {$$ = $1 % $3;printf("----%d----\n",$$);} 	
-     ;
+dotIdentifiers : dotIdentifiers '.' IDENTIFIER                                          {sprintf(buffer,"%s.%s",$1,$3); $$ = strdup(buffer);}
+               | /*Empty*/                                                              {sprintf(buffer,""); $$ = strdup(buffer);}
+	  ;
 
-INTF : INTVAL		{$$=$1;}
-     | '(' IE ')'		{$$=$2;}
-     ; 
-     /*
-PE2 :   BOOLVAL         {$$ = $1;}
-    ;
-PE3 :   IDENTIFIER      //{$$ = $1;}
-	| 	THIS            //{$$ = $1;}
-	| 	NEW INT '[' PE1 ']'  // {$$ = $1;}
-	| 	NEW IDENTIFIER '(' ')'  //{$$ = $1;}
-	| 	'!' PE3         //  {$$ = !($2);}
-	| 	'(' PE3 ')'      // {$$ = $2;}
-    ;*/
+Expression  :   PrimaryExpression '&' PrimaryExpression                                 {sprintf(buffer,"%s & %s",$1,$3); $$ = strdup(buffer);}
+            |	PrimaryExpression '<' PrimaryExpression                                 {sprintf(buffer,"%s < %s",$1,$3); $$ = strdup(buffer);}
+            |	PrimaryExpression '+' PrimaryExpression                                 {sprintf(buffer,"%s + %s",$1,$3); $$ = strdup(buffer);}
+            |	PrimaryExpression '-' PrimaryExpression                                 {sprintf(buffer,"%s - %s",$1,$3); $$ = strdup(buffer);}
+            |	PrimaryExpression '*' PrimaryExpression                                 {sprintf(buffer,"%s * %s",$1,$3); $$ = strdup(buffer);}
+            |	PrimaryExpression '/' PrimaryExpression                                 {sprintf(buffer,"%s / %s",$1,$3); $$ = strdup(buffer);}
+            |	PrimaryExpression '[' PrimaryExpression ']'                             {sprintf(buffer,"%s [ %s ]",$1,$3); $$ = strdup(buffer);}
+            |	PrimaryExpression '.' IDENTIFIER                                        {sprintf(buffer,"%s.%s",$1,$3); $$ = strdup(buffer);}
+            |	PrimaryExpression '.' IDENTIFIER '(' Expr MoreExpressions ')'           {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
+            |   PrimaryExpression '.' IDENTIFIER '(' ')'                                {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
+            |	IDENTIFIER '(' Expression ')'/* Macro expr call */                      {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
+            |   IDENTIFIER '('  ')'                                                     {sprintf(buffer,"%s ()",$1); $$ = strdup(buffer);}
+            ;
 
-Statement 	: 	'{' StatementStar '}'
-	| 	IDENTIFIER '=' IE ';'                    
-	| 	IDENTIFIER '[' IE ']' '=' IE ';'
-	|   IF '(' IE ')' Statement //Resolve the if then else conflict.
-	| 	WHILE '(' IE ')' Statement
-    ;
-/*    
-Temp :
-     | ELSE Statement
-     ;
-     */
-StatementStar : Statement StatementStar
-              |
-  /*
-E : BE  {printf ("Came to boolean\n");}
-    | IE    {printf("Came to arithmetic\n");
-    ;
-  
-BE  :   PE2 '&' PE2       { if($1=="true" && $3=="true") $$ ="true"; else $$="false";}
-    | 	PE1 '<' PE1       { $$ = $1 < $3;}
-    ; */
+MoreExpressions : /*empty*/                                         {sprintf(buffer,""); $$ = strdup(buffer);}
+                | MoreExpressions ',' Expr                          {sprintf(buffer,"%s , %s",$1,$2); $$ = strdup(buffer);}
+                ;
 
+PrimaryExpression: INTVAL                       {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
+                 | BOOLVAL                      {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
+                 | IDENTIFIER                   {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
+                 | THIS                         {sprintf(buffer,"this");  $$ = strdup(buffer);}
+                 | NEW INT '[' Expr ']'         {sprintf(buffer,"new int [ %s ]",$4); $$ = strdup(buffer);}
+                 | NEW IDENTIFIER '(' ')'       {sprintf(buffer,"new %s ()",$2); $$ = strdup(buffer);}
+                 | '!' Expr                     {sprintf(buffer,"!%s",$2); $$ = strdup(buffer);}
+                 | '(' Expression ')'           {sprintf(buffer,"(%s)",$2); $$ = strdup(buffer);}
+                 | '(' PrimaryExpression ')'    {sprintf(buffer,"(%s)",$2); $$ = strdup(buffer);}
+                 ;
 
-    /*
-    | 	PE1 '[' PE1 ']'       //{ $$ = $1[$3];}
-    | 	PE3 '.' LENGTH       
-    | 	PE1 '.' IDENTIFIER '(' something ')'       //{ $$ = $1.$3($5); }
-    ;
-    
-something :	 
-        | blah E
-        ;
-blah : ',' E blah
-     |
-    ;
- */
 %%
 main(){
 	// parse through the input until there is no more.
