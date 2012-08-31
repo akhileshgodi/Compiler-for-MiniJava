@@ -13,6 +13,6 @@ class A {
         int x;
         x = 1;
         print(3,4,5);
-        return ONE(0);
+        return +1;
     }
 }

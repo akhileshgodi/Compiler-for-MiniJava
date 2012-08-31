@@ -426,6 +426,8 @@ MoreExpressions : /*empty*/                                         {sprintf(buf
                 ;
 
 PrimaryExpression: INTVAL                       {sprintf(buffer,"%d",$1); $$ = strdup(buffer);}
+                 | '+' INTVAL                   {sprintf(buffer,"%d",$2); $$ = strdup(buffer);}
+                 | '-' INTVAL                   {sprintf(buffer,"%d",-($2)); $$ = strdup(buffer);}
                  | BOOLVAL                      {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
                  | IDENTIFIER                   {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
                  | THIS                         {sprintf(buffer,"this");  $$ = strdup(buffer);}
