@@ -28,4 +28,5 @@ String	return STRING;
 [#;{}\(\)\[\]\.]  return yytext[0];
 [%-\/<=!\+\*\&] yylval.op = strdup(yytext); return yylval.op[0];
 ([1-9][0-9]*|0) yylval.ival = atoi(yytext); return INTVAL;
+<<EOF>> return END_OF_FILE;
 %%
