@@ -1,6 +1,7 @@
-#define ZERO() (0+0)
+
+#define ZERO() (0)
 #define ONE() (1)
-#define ZERO(a) (0+0)
+#define TWO(a) ( System)
 #define ONE(a,b) (1)
 class Test{
     public static void main(String[] a){
@@ -9,6 +10,9 @@ class Test{
 }
 class A {
     public int run(){
-        return ZERO();
+        int x;
+        x = ZERO();
+        x = ONE();
+        return ONE() + TWO();
     }
 }

@@ -7,9 +7,9 @@ extern FILE* yyin;
 void yyerror(const char *s);
 extern int yyparse();
 char* buffer;
-char macroExpressionName [20][100];
-static char macroExpressionExpansion [20][150];
 
+char macroExpressionName [20][100];
+char macroExpressionExpansion [20][150];
 int noOfArguments[20];
 char arguments [20][10][50];
 int totalMacros = 0;
@@ -102,27 +102,26 @@ MacroStatement  : '#' DEFINE IDENTIFIER '(' IdentifierList ')' '{' Statements '}
 MacroExpression : '#' DEFINE IDENTIFIER '(' IdentifierList ')' '(' Expr ')'       
                     {
                         totalMacros++;
-                        strcpy(macroExpressionName[totalMacros-1],$3);
                         int args = noOfIdentifiers;
                         noOfArguments[totalMacros-1] = args;  
                         sprintf(buffer,"#define %s(%s) (%s)\n",$3,$5,$8);
-			printf("MacroName : %s\n",macroExpressionName[totalMacros-1]);
-			printf("Total Number of Arguments : %d\n", noOfArguments[totalMacros-1]);
-			if(noOfArguments[totalMacros-1] > 0) printf("The Arguments are : \n");
-			for(args = 0; args < noOfArguments[totalMacros-1] ; args++)
-				printf("%d : %s\n",args, arguments[totalMacros-1][args]);
-			noOfIdentifiers = 0;
-			sprintf(macroExpressionName[totalMacros-1],"%s",$8);
-			printf("Macro Expansion : %s\n",macroExpressionName[totalMacros-1]);
-			$$ = strdup(buffer); 
+			            sprintf(macroExpressionName[totalMacros-1],"%s",$3);
+			            for(args = 0; args< noOfIdentifiers; args++) {
+			                if(strcmp(macroExpressionName[totalMacros-1],macroExpressionName[args]) == 0)
+			                    yyerror("Overloading is not allowed in minijava.");
+			            }
+			            //Check if the expresssion contains or uses other macros;
+			            noOfIdentifiers = 0;
+			            sprintf(macroExpressionExpansion[totalMacros-1],"%s",$8);
+			            $$ = strdup(buffer); 
                     }
                 ;  
 
 IdentifierList  :  IDENTIFIER MoreIdentifiers                                           
                     {
-			sprintf(arguments[totalMacros][noOfIdentifiers],"%s",$1);
-			noOfIdentifiers++;
-                        sprintf(buffer,"%s %s",$1,$2);
+			            sprintf(arguments[totalMacros][noOfIdentifiers],"%s",$1);
+			            noOfIdentifiers++;
+                        sprintf(buffer,"%s%s",$1,$2);
                         $$ = strdup(buffer);
                     }
                 |  /*empty*/                                                            {sprintf(buffer,""); $$ = strdup(buffer);}
@@ -130,8 +129,8 @@ IdentifierList  :  IDENTIFIER MoreIdentifiers
 
 MoreIdentifiers :   MoreIdentifiers ',' IDENTIFIER                              
                     {
-			sprintf(arguments[totalMacros][noOfIdentifiers],"%s",$3);
-			noOfIdentifiers++;
+		                sprintf(arguments[totalMacros][noOfIdentifiers],"%s",$3);
+		                noOfIdentifiers++;
                         sprintf(buffer,"%s, %s",$1,$3);
                         $$ = strdup(buffer);
                     }
@@ -228,21 +227,8 @@ Expression  :   PrimaryExpression '&' PrimaryExpression                         
             |	PrimaryExpression '.' IDENTIFIER                                        {sprintf(buffer,"%s.%s",$1,$3); $$ = strdup(buffer);}
             |	PrimaryExpression '.' IDENTIFIER '(' Expr MoreExpressions ')'      {sprintf(buffer,"%s.%s(%s%s)",$1,$3,$5,$6);$$ = strdup(buffer);}
             |   PrimaryExpression '.' IDENTIFIER '(' ')'                                {sprintf(buffer,"%s.%s()",$1,$3); $$ = strdup(buffer);}
-            |	IDENTIFIER '(' Expr MoreExpressions ')'/* Macro expr call */                      
-                {
-                /*sprintf(buffer,"%s(%s)",$1,$3);*/
-                  sprintf(buffer,"MACRO TO BE REPLACED HERE");
-                  $$ = strdup(buffer);
-                }
-            
-            |   IDENTIFIER '('  ')'                                                     
-                {
-                    //sprintf(buffer,"%s ()",$1);
-                      sprintf(buffer,"MACRO TO BE REPLACED HERE"); 
-                     $$ = strdup(buffer);
-                }
             ;
-
+            
 MoreExpressions : /*empty*/                                         {sprintf(buffer,""); $$ = strdup(buffer);}
                 | MoreExpressions ',' Expr                          {sprintf(buffer,"%s , %s",$1,$3); $$ = strdup(buffer);}
                 ;
@@ -255,7 +241,45 @@ PrimaryExpression: INTVAL                       {sprintf(buffer,"%d",$1); $$ = s
                  | NEW IDENTIFIER '(' ')'       {sprintf(buffer,"new %s ()",$2); $$ = strdup(buffer);}
                  | '!' Expr                     {sprintf(buffer,"!%s",$2); $$ = strdup(buffer);}
                  | '(' Expr ')'                 {sprintf(buffer,"(%s)",$2); $$ = strdup(buffer);}
-                 ;
+                 |	IDENTIFIER '(' Expr MoreExpressions ')'/* Macro expr call */                      
+                    {
+                    
+					    printf("Identifier : ------%s---------\n",$1);
+					    char* tempStorage;					
+                        int i = 0;
+					    int location = -1;
+					    for(i=0; i<totalMacros; i++) {
+					    	if(strcmp(macroExpressionName[i],$1) == 0) {
+					    		location = i;
+					    		i = totalMacros+1;
+					    	}
+					    }
+					    if(i<totalMacros)
+					        printf("------%s---------\n",macroExpressionExpansion[i]);
+										
+					    sprintf(buffer,"MACRO TO BE REPLACED HERE");
+                  	    $$ = strdup(buffer);
+                    }
+            
+                |   IDENTIFIER '('  ')'                                                     
+               	    {
+                        int i = 0;
+					    int location = -1;
+					    for(i=0; i<totalMacros || i == -1; i++) {
+					    	if(strcmp(macroExpressionName[i],$1) == 0) {
+					    		location = i;
+					    		i = totalMacros+1;
+					    	}
+					    }
+					    if(i==totalMacros) 
+					        yyerror("Macro not defined");
+                        strcpy(buffer, "");
+					    if(i==totalMacros+2)
+					      sprintf(buffer,"%s",macroExpressionExpansion[location]); 
+                        $$ = strdup(buffer);
+                    }
+                ;
+
 
 %%
 main(){
