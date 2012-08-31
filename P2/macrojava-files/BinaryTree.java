@@ -225,6 +225,7 @@ class Tree{
 		    ntb = p_node.SetLeft(my_null);
 		    ntb = p_node.SetHas_Left(false);
 		}
+		
 		else {
 		    ntb = p_node.SetRight(my_null);
 		    ntb = p_node.SetHas_Right(false);

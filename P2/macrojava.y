@@ -7,6 +7,14 @@ extern FILE* yyin;
 void yyerror(const char *s);
 extern int yyparse();
 char* buffer;
+char macroExpressionName [20][100];
+static char macroExpressionExpansion [20][150];
+
+int noOfArguments[20];
+char arguments [20][10][50];
+int totalMacros = 0;
+int noOfIdentifiers;
+
 %}
 
 %union{
@@ -53,6 +61,7 @@ char* buffer;
 %type <str> MoreArguments 
 %type <str> Type 
 %type <str> Statements
+%type <str> Statement
 %type <str> Expr
 %type <str> dotIdentifiers
 %type <str> Expression
@@ -66,6 +75,8 @@ char* buffer;
 
 %initial-action {
 buffer = (char *)malloc(100000*sizeof(char));
+int i = 0;
+for(i=0;i<20;i++) noOfArguments[i]=0;
 }
 
 %% 
@@ -75,22 +86,55 @@ Goal        : Macros MainClass TypeDeclarationList                              
             ;
       
           
-Macros      : Macros MacroExpression                                                    {sprintf(buffer,"%s%s",$1,$2); $$ = strdup(buffer);}
-            | Macros MacroStatement                                                     {sprintf(buffer,"%s%s",$1,$2); $$ = strdup(buffer);}
+Macros      : MacroExpression Macros                                                   {sprintf(buffer,"%s%s",$1,$2); $$ = strdup(buffer);}
+            | MacroStatement Macros                                                     {sprintf(buffer,"%s%s",$1,$2); $$ = strdup(buffer);}
             | /*empty*/                                                                 {sprintf(buffer,"\n"); $$ = strdup(buffer);}
             ;
             
-MacroStatement  : '#' DEFINE IDENTIFIER '(' IdentifierList ')' '{' Statements '}'       {sprintf(buffer,"#define %s(%s) {%s}\n",$3,$5,$8); $$ = strdup(buffer);}
+MacroStatement  : '#' DEFINE IDENTIFIER '(' IdentifierList ')' '{' Statements '}'       
+                  {
+                    totalMacros++;
+                    sprintf(buffer,"#define %s(%s) {%s}\n",$3,$5,$8); 
+                    $$ = strdup(buffer);
+                  }
                 ;
 
-MacroExpression : '#' DEFINE IDENTIFIER '(' IdentifierList ')' '(' Expression ')'       {sprintf(buffer,"#define %s(%s) (%s)\n",$3,$5,$8); $$ = strdup(buffer);}
+MacroExpression : '#' DEFINE IDENTIFIER '(' IdentifierList ')' '(' Expr ')'       
+                    {
+                        totalMacros++;
+                        strcpy(macroExpressionName[totalMacros-1],$3);
+                        int args = noOfIdentifiers;
+                        noOfArguments[totalMacros-1] = args;  
+                        sprintf(buffer,"#define %s(%s) (%s)\n",$3,$5,$8);
+			printf("MacroName : %s\n",macroExpressionName[totalMacros-1]);
+			printf("Total Number of Arguments : %d\n", noOfArguments[totalMacros-1]);
+			if(noOfArguments[totalMacros-1] > 0) printf("The Arguments are : \n");
+			for(args = 0; args < noOfArguments[totalMacros-1] ; args++)
+				printf("%d : %s\n",args, arguments[totalMacros-1][args]);
+			noOfIdentifiers = 0;
+			sprintf(macroExpressionName[totalMacros-1],"%s",$8);
+			printf("Macro Expansion : %s\n",macroExpressionName[totalMacros-1]);
+			$$ = strdup(buffer); 
+                    }
                 ;  
 
-IdentifierList  :  IDENTIFIER MoreIdentifiers                                           {sprintf(buffer,"%s %s",$1,$2); $$ = strdup(buffer);}
+IdentifierList  :  IDENTIFIER MoreIdentifiers                                           
+                    {
+			sprintf(arguments[totalMacros][noOfIdentifiers],"%s",$1);
+			noOfIdentifiers++;
+                        sprintf(buffer,"%s %s",$1,$2);
+                        $$ = strdup(buffer);
+                    }
                 |  /*empty*/                                                            {sprintf(buffer,""); $$ = strdup(buffer);}
                 ;
 
-MoreIdentifiers :  MoreIdentifiers "," IDENTIFIER                                       {sprintf(buffer,"%s, %s",$1,$3); $$ = strdup(buffer);}
+MoreIdentifiers :   MoreIdentifiers ',' IDENTIFIER                              
+                    {
+			sprintf(arguments[totalMacros][noOfIdentifiers],"%s",$3);
+			noOfIdentifiers++;
+                        sprintf(buffer,"%s, %s",$1,$3);
+                        $$ = strdup(buffer);
+                    }
                 |  /*empty*/                                                            {sprintf(buffer,""); $$ = strdup(buffer);}
                 ;
                 
@@ -151,17 +195,19 @@ Type 	: INT '[' ']'                           {sprintf(buffer,"int []"); $$ = st
 	| IDENTIFIER                                {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
 	;
 
-
-Statements : '{'  Statements  '}' Statements                                            {sprintf(buffer,"{\n%s\n}\n%s",$2, $4); $$ = strdup(buffer);}
-	  | IDENTIFIER '=' Expr ';' Statements {}                                           {sprintf(buffer,"%s = %s;\n %s",$1,$3,$5); $$ = strdup(buffer);}
-	  | IDENTIFIER '[' Expr ']' '=' Expr ';' Statements {}                              {sprintf(buffer,"%s[%s] = %s;\n%s",$1,$3,$6,$8); $$ = strdup(buffer);}
-	  | IF '(' Expr ')' Statements                                                      {sprintf(buffer,"if (%s) %s",$3,$5); $$ = strdup(buffer);}
-	  | IF '(' Expr ')' Statements ELSE Statements                                      {sprintf(buffer,"if (%s) %selse %s",$3,$5,$7); $$ = strdup(buffer);}
-      | WHILE '(' Expr ')' Statements                                                   {sprintf(buffer,"while (%s) %s \n",$3,$5); $$ = strdup(buffer);}
-      | IDENTIFIER dotIdentifiers '('  ')' ';' Statements                               {sprintf(buffer,"%s%s(); \n %s",$1,$2,$6); $$ = strdup(buffer);}
-      |	IDENTIFIER dotIdentifiers '(' Expr MoreExpressions ')' ';' Statements            {sprintf(buffer,"%s%s(%s%s); \n %s",$1,$2,$4,$5,$8); $$ = strdup(buffer);}
-      | /*empty*/                                                                        {sprintf(buffer,""); $$ = strdup(buffer);}
-      | ';'                                                                              {sprintf(buffer,";"); $$ = strdup(buffer);}
+Statements : Statement Statements               {sprintf(buffer,"%s%s",$1,$2); $$=strdup(buffer);}
+           | /*empty*/                          {sprintf(buffer,"");$$=strdup(buffer);}
+           ;
+              
+Statement : '{'  Statements  '}'                                            {sprintf(buffer,"{\n%s\n}\n",$2); $$ = strdup(buffer);}
+	  | IDENTIFIER '=' Expr ';'                                             {sprintf(buffer,"%s = %s;\n",$1,$3); $$ = strdup(buffer);}
+	  | IDENTIFIER '[' Expr ']' '=' Expr ';'                                {sprintf(buffer,"%s[%s] = %s;\n",$1,$3,$6); $$ = strdup(buffer);}
+	  | IF '(' Expr ')' Statement                                           {sprintf(buffer,"if (%s) %s",$3,$5); $$ = strdup(buffer);}
+	  | IF '(' Expr ')' Statement ELSE Statement                            {sprintf(buffer,"if (%s) %selse %s",$3,$5,$7); $$ = strdup(buffer);}
+      | WHILE '(' Expr ')' Statement                                        {sprintf(buffer,"while (%s) %s\n",$3,$5); $$ = strdup(buffer);}
+      | IDENTIFIER dotIdentifiers '('  ')' ';'                              {sprintf(buffer,"%s%s(); \n",$1,$2); $$ = strdup(buffer);}
+      |	IDENTIFIER dotIdentifiers '(' Expr MoreExpressions ')' ';'          {sprintf(buffer,"%s%s(%s%s); \n",$1,$2,$4,$5); $$ = strdup(buffer);}
+      | ';'                                                                 {sprintf(buffer,";"); $$ = strdup(buffer);}
       ;
 
 Expr : Expression                                                                       {sprintf(buffer,"%s",$1); $$ = strdup(buffer);}
@@ -180,10 +226,21 @@ Expression  :   PrimaryExpression '&' PrimaryExpression                         
             |	PrimaryExpression '/' PrimaryExpression                                 {sprintf(buffer,"%s / %s",$1,$3); $$ = strdup(buffer);}
             |	PrimaryExpression '[' PrimaryExpression ']'                             {sprintf(buffer,"%s [ %s ]",$1,$3); $$ = strdup(buffer);}
             |	PrimaryExpression '.' IDENTIFIER                                        {sprintf(buffer,"%s.%s",$1,$3); $$ = strdup(buffer);}
-            |	PrimaryExpression '.' IDENTIFIER '(' Expr MoreExpressions ')'           {sprintf(buffer,"%s.%s(%s%s)",$1,$3,$5,$6); $$ = strdup(buffer);}
+            |	PrimaryExpression '.' IDENTIFIER '(' Expr MoreExpressions ')'      {sprintf(buffer,"%s.%s(%s%s)",$1,$3,$5,$6);$$ = strdup(buffer);}
             |   PrimaryExpression '.' IDENTIFIER '(' ')'                                {sprintf(buffer,"%s.%s()",$1,$3); $$ = strdup(buffer);}
-            |	IDENTIFIER '(' Expression ')'/* Macro expr call */                      {sprintf(buffer,"%s(%s)",$1,$3); $$ = strdup(buffer);}
-            |   IDENTIFIER '('  ')'                                                     {sprintf(buffer,"%s ()",$1); $$ = strdup(buffer);}
+            |	IDENTIFIER '(' Expr MoreExpressions ')'/* Macro expr call */                      
+                {
+                /*sprintf(buffer,"%s(%s)",$1,$3);*/
+                  sprintf(buffer,"MACRO TO BE REPLACED HERE");
+                  $$ = strdup(buffer);
+                }
+            
+            |   IDENTIFIER '('  ')'                                                     
+                {
+                    //sprintf(buffer,"%s ()",$1);
+                      sprintf(buffer,"MACRO TO BE REPLACED HERE"); 
+                     $$ = strdup(buffer);
+                }
             ;
 
 MoreExpressions : /*empty*/                                         {sprintf(buffer,""); $$ = strdup(buffer);}
@@ -197,8 +254,7 @@ PrimaryExpression: INTVAL                       {sprintf(buffer,"%d",$1); $$ = s
                  | NEW INT '[' Expr ']'         {sprintf(buffer,"new int [ %s ]",$4); $$ = strdup(buffer);}
                  | NEW IDENTIFIER '(' ')'       {sprintf(buffer,"new %s ()",$2); $$ = strdup(buffer);}
                  | '!' Expr                     {sprintf(buffer,"!%s",$2); $$ = strdup(buffer);}
-                 | '(' Expression ')'           {sprintf(buffer,"(%s)",$2); $$ = strdup(buffer);}
-                 | '(' PrimaryExpression ')'    {sprintf(buffer,"(%s)",$2); $$ = strdup(buffer);}
+                 | '(' Expr ')'                 {sprintf(buffer,"(%s)",$2); $$ = strdup(buffer);}
                  ;
 
 %%
