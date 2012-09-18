@@ -12,7 +12,7 @@
 
 
 DIGIT       [0-9]
-ALPHA       [a-zA-Z]              
+ALPHA       [_a-zA-Z]              
 ID          {ALPHA}[_a-zA-Z0-9$]*
 KEYWORDS    ("define"|"abstract"|"continue"|"for"|"new"|"switch"|"assert"|"default"|"goto"|"package"|"synchronized"|"boolean"|"do"|"if"|"private"|"this"|"break"|"double"|"implements"|"protected"|"throw"|"byte"|"else"|"import"|"public"|"throws"|"case"|"enum"|"instanceof"|"return"|"transient"|"catch"|"extends"|"int"|"short"|"try"|"char"|"final"|"interface"|"static"|"void"|"class"|"finally"|"long"|"volatile"|"const"|"float"|"native"|"super"|"while")
 BOOLEANS    ("true"|"false"|"True"|"False")

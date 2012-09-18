@@ -1,7 +1,7 @@
 
 #define ZERO() (0)
-#define ONE(a) (a)
-#define print(x,y,z) {y=ONE(a); x=z;}
+#define y() (a)
+#define print(x) { x=3; System.out.println(x);}
 
 class Test{
     public static void main(String[] a){
@@ -11,8 +11,7 @@ class Test{
 class A {
     public int run(){
         int x;
-        x = 1;
-        print(3,4,5);
-        return +1;
+        print(y());
+        return 1;
     }
 }

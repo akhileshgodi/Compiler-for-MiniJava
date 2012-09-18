@@ -446,6 +446,6 @@ main(){
 }
 
 void yyerror(const char *s){
-	printf ("// Failed to parse macrojava code.\n",s)	;
+	printf ("// Failed to parse macrojava code.\n")	;
 	exit(1);
 }

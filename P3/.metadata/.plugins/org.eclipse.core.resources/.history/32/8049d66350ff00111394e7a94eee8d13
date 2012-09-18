@@ -1,0 +1,49 @@
+import java.util.ArrayList;
+import java.util.Hashtable;
+
+public abstract class TableContents {
+	public abstract TableContents find(String s);
+}
+
+class GoalTable extends TableContents{
+	
+	String mainClass;
+	Hashtable<String, ClassTable> classes = new Hashtable<String, ClassTable>();
+    public TableContents find(String s){
+	
+    	return null;
+		 
+	}
+}
+
+class ClassTable{
+	
+	boolean isMain = false;
+	//String name;
+	Hashtable<String, VariableTable> variables = new Hashtable<String, VariableTable>();
+	Hashtable<String, FunctionTable> functions = new Hashtable<String,FunctionTable>();
+	TableContents previousPointer;
+	public TableContents find(String s){
+		return null;
+	}
+}
+
+class VariableTable {
+	boolean isFormal = false;
+	//boolean isInstance = false;
+	String type;
+	TableContents previosPointer;
+	public TableContents find(String s){
+		return null;
+	
+	}
+	
+}
+
+class FunctionTable {
+
+	Hashtable<String, VariableTable> parameters = new Hashtable<String, VariableTable>();
+	ArrayList<VariableTable> orderedParameters = new ArrayList<VariableTable>();
+	Hashtable<String, VariableTable> localVars = new Hashtable<String, VariableTable>();
+	
+}
