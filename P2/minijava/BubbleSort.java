@@ -10,6 +10,7 @@ class BubbleSort{
 // using Bublesort
 class BBS{
     
+    int [] BBS;
     int[] number ;
     int size ;
 

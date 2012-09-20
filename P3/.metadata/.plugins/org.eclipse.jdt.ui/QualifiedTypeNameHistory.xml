@@ -8,14 +8,16 @@
 <fullyQualifiedTypeName name="ClassTable"/>
 <fullyQualifiedTypeName name="java.util.Hashtable"/>
 <fullyQualifiedTypeName name="VariableTable"/>
-<fullyQualifiedTypeName name="java.util.ArrayList"/>
 <fullyQualifiedTypeName name="java.lang.String"/>
 <fullyQualifiedTypeName name="TableContents"/>
 <fullyQualifiedTypeName name="syntaxtree.Goal"/>
-<fullyQualifiedTypeName name="visitor.TableContents"/>
 <fullyQualifiedTypeName name="visitor.GoalTable"/>
 <fullyQualifiedTypeName name="syntaxtree.Identifier"/>
-<fullyQualifiedTypeName name="visitor.ClassTable"/>
-<fullyQualifiedTypeName name="visitor.FunctionTable"/>
 <fullyQualifiedTypeName name="visitor.VariableTable"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
+<fullyQualifiedTypeName name="java.lang.Class"/>
+<fullyQualifiedTypeName name="visitor.TableContents"/>
+<fullyQualifiedTypeName name="visitor.FunctionTable"/>
+<fullyQualifiedTypeName name="visitor.ClassTable"/>
+<fullyQualifiedTypeName name="java.lang.System"/>
 </qualifiedTypeNameHistroy>

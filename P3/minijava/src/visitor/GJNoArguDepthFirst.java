@@ -4,6 +4,8 @@
 
 package visitor;
 import syntaxtree.*;
+
+import java.security.Policy.Parameters;
 import java.util.*;
 
 /**
@@ -18,6 +20,11 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
 	GoalTable top;
 	ClassTable currentClass;
 	int position;
+	int parseNumber = 0;
+	GoalTable g = new GoalTable();
+    
+	ArrayList<String> params = new ArrayList<String>();
+	Stack <ArrayList<String>> paramStack = new Stack<ArrayList<String>>();
 	
 	//
     // Auto class visitors--probably don't need to be overridden.
@@ -25,6 +32,7 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(NodeList n) {
       R _ret=null;
       int _count=0;
+      
       for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
          e.nextElement().accept(this);
          _count++;
@@ -35,6 +43,7 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(NodeListOptional n) {
       if ( n.present() ) {
          R _ret=null;
+         
          int _count=0;
          for ( Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
             e.nextElement().accept(this);
@@ -77,7 +86,6 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(Goal n) {
       R _ret=null;
       
-      GoalTable g = new GoalTable();
       current = g;
       top = g;
       g.mainClass = n.f0.f1.f0.tokenImage; // In mainclass -> Identifier() -> Identifier
@@ -85,9 +93,15 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
       n.f0.accept(this);
       n.f1.accept(this);
       n.f2.accept(this);
-      //return g;
-      //System.out.println(g.classes.keySet());
       
+      //System.out.println(g.classes.keySet());
+      parseNumber = 1;
+      if(parseNumber == 1){
+    	  current = g;
+    	  n.f0.accept(this);
+    	  n.f1.accept(this);
+    	  n.f2.accept(this);
+      }
       return (R) g;
       //return _ret;
    }
@@ -114,45 +128,67 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(MainClass n) {
       R _ret=null;
       
-      ClassTable _main = new ClassTable();
-      _main.isMain = true;
-      _main.className= n.f1.f0.tokenImage;
-      _main.previousPointer = top;	//The previous scope was the program itself
-      current = _main;	//Currently in the main class scope
-      GoalTable goal = (GoalTable)_main.previousPointer;
-      goal.classes.put((String)_main.className, _main);	//Putting this entry into the Hash table
-
-      FunctionTable specialFunction = new FunctionTable();
-      specialFunction.isMain = true;
-      specialFunction.returnType = "void";
-      specialFunction.previousPointer = _main;
-      _main.functions.put("main", specialFunction);
+      if(parseNumber == 0) {
+	      ClassTable _main = new ClassTable();
+	      _main.isMain = true;
+	      _main.className= n.f1.f0.tokenImage;
+	      _main.previousPointer = top;	//The previous scope was the program itself
+	      current = _main;	//Currently in the main class scope
+	      
+	      GoalTable goal = (GoalTable)_main.previousPointer;
+	      goal.classes.put((String)_main.className, _main);	//Putting this entry into the Hash table
+	
+	      FunctionTable specialFunction = new FunctionTable();
+	      specialFunction.isMain = true;
+	      specialFunction.returnType = "void";
+	      specialFunction.previousPointer = _main;
+	      _main.functions.put("main", specialFunction);
+	      
+	      current = specialFunction;
+	      position = 0;
+	      currentClass = _main;
       
-      current = specialFunction;
-      position = 0;
-      currentClass = _main;
-      
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
-      n.f4.accept(this);
-      n.f5.accept(this);
-      n.f6.accept(this);
-      n.f7.accept(this);
-      n.f8.accept(this);
-      n.f9.accept(this);
-      n.f10.accept(this);
-      n.f11.accept(this);
-      n.f12.accept(this);
-      n.f13.accept(this);
-      n.f14.accept(this);
-      n.f15.accept(this);
-      n.f16.accept(this);
-      
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+	      n.f6.accept(this);
+	      n.f7.accept(this);
+	      n.f8.accept(this);
+	      n.f9.accept(this);
+	      n.f10.accept(this);
+	      n.f11.accept(this);
+	      n.f12.accept(this);
+	      n.f13.accept(this);
+	      n.f14.accept(this);
+	      n.f15.accept(this);
+	      n.f16.accept(this);
+	      return (R) _main;
+	  }
       //System.out.println(n.f1.f0.tokenImage);
-      return (R)_main;
-      //return _ret;
+      //return (R)_main;
+      else {
+          n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+	      n.f6.accept(this);
+	      n.f7.accept(this);
+	      n.f8.accept(this);
+	      n.f9.accept(this);
+	      n.f10.accept(this);
+	      n.f11.accept(this);
+	      n.f12.accept(this);
+	      n.f13.accept(this);
+	      n.f14.accept(this);
+	      n.f15.accept(this);
+	      n.f16.accept(this);
+	  }
+      return _ret;
    }
 
    /**
@@ -175,31 +211,47 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(ClassDeclaration n) {
       R _ret=null;
-      
-      ClassTable _class = new ClassTable();
-      //System.out.println(n.f1.f0.tokenImage);
-      _class.className = n.f1.f0.tokenImage;
-      _class.previousPointer = top;
-      GoalTable goal = (GoalTable) _class.previousPointer;
-      goal.classes.put(_class.className, _class);
-      
-      position = 0;
-      currentClass = _class;
-      current = _class;
-      
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
-      n.f4.accept(this);
-      n.f5.accept(this);
-      
+      if(parseNumber == 0) {
+	      ClassTable _class = new ClassTable();
+	      //System.out.println(n.f1.f0.tokenImage);
+	      _class.className = n.f1.f0.tokenImage;
+	      _class.previousPointer = top;
+	      GoalTable goal = (GoalTable) _class.previousPointer;
+	      if(goal.classes.get(_class.className )== null)
+	    	  goal.classes.put(_class.className, _class);
+	      else {
+	    	  System.err.print(" : Class redeclared");
+	    	  System.exit(1);
+	      }
+	    	  
+	      
+	      position = 0;
+	      currentClass = _class;
+	      current = _class;
+	      
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+	      return (R)_class;
+      }
+      else {
       //System.out.println("----------------- CLASS NAME : " + _class.className + "-----------------");
       //System.out.println("functions : "+_class.functions.keySet());
       //System.out.println("variables : " + _class.variables.keySet());
-      
-      return (R)_class;
-      //return _ret;
+    	  n.f0.accept(this);
+	      n.f1.accept(this);
+	      String className = (String) n.f1.f0.tokenImage;
+	      currentClass =(ClassTable)g.find(className);
+	      current = (TableContents)currentClass;
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+      }
+      return _ret;
    }
 
    /**
@@ -215,27 +267,60 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(ClassExtendsDeclaration n) {
       R _ret=null;
       
-      ClassTable _class = new ClassTable();
-      //System.out.println(n.f1.f0.tokenImage);
-      _class.className = n.f1.f0.tokenImage;
-      _class.isExtends = true;
-      _class.extendsClassName = n.f3.f0.tokenImage;
-      _class.previousPointer = top;
-      GoalTable goal = (GoalTable) _class.previousPointer;
-      goal.classes.put(_class.className, _class);
-      
-      position = 0;
-      currentClass = _class;
-      current = _class;
-      
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
-      n.f4.accept(this);
-      n.f5.accept(this);
-      n.f6.accept(this);
-      n.f7.accept(this);
+      if(parseNumber == 0) {
+	      ClassTable _class = new ClassTable();
+	      //System.out.println(n.f1.f0.tokenImage);
+	      _class.className = n.f1.f0.tokenImage;
+	      _class.isExtends = true;
+	      _class.extendsClassName = n.f3.f0.tokenImage;
+	      _class.previousPointer = top;
+	      GoalTable goal = (GoalTable) _class.previousPointer;
+	      if(goal.classes.get(_class.className )== null)
+	    	  goal.classes.put(_class.className, _class);
+	      else {
+	    	  System.err.print("Class redeclared");
+	    	  System.exit(1);
+	      }
+	      position = 0;
+	      currentClass = _class;
+	      current = _class;
+	      
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+	      n.f6.accept(this);
+	      n.f7.accept(this);
+      } else {
+    	  
+    	  String className = (String) n.f1.f0.tokenImage;
+	      currentClass =(ClassTable)g.find(className);
+	      current = (TableContents)currentClass;
+	      String extendedClassName = (String) n.f1.f0.tokenImage;
+	      ClassTable extendedClass = (ClassTable)g.find(extendedClassName);
+	      if(extendedClass == null){
+	    	  System.err.println("Parent class not found.");
+	    	  System.exit(1);
+	      }
+	      while (extendedClass.isExtends){
+		      if(extendedClass.extendsClassName.equals(className)){
+		    	  System.err.println("Cycling occured");
+		    	  System.exit(1);
+		      }
+		      extendedClass = (ClassTable)g.find(extendedClass.extendsClassName);
+	      }
+	      
+    	  n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+	      n.f6.accept(this);
+	      n.f7.accept(this);
+      }
       //System.out.println("----------------- CLASS NAME : " + _class.className + "-----------------");
       //System.out.println("functions : "+_class.functions.keySet());
       //System.out.println("variables : " + _class.variables.keySet());
@@ -249,26 +334,37 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(VarDeclaration n) {
       R _ret=null;
-      
-      n.f0.accept(this);
+      if(parseNumber == 0) {
+	      n.f0.accept(this);
+	
+	      VariableTable _variable = new VariableTable();
+	      _variable.position = position++;
+	      _variable.previousPointer = current;
+	      _variable.type = typeOfReturn;
+	      //System.out.println(_variable.type);
+	      if(current instanceof ClassTable) {
+	    	  _variable.isInstance = true;
+	    	  if(((ClassTable)currentClass).variables.get(n.f1.f0.tokenImage) == null)
+	    		  ((ClassTable) currentClass).variables.put(n.f1.f0.tokenImage,_variable);
+	    	  else System.err.print("Variable redefined");
+	    	  
+	      } else if (current instanceof FunctionTable) {
+	    	  if(((FunctionTable) current).localVars.get(n.f1.f0.tokenImage) == null)
+	    		  ((FunctionTable) current).localVars.put(n.f1.f0.tokenImage, _variable);
+	    	  else System.err.print("Variable redefined");
+	      }
+	    	  
+	      n.f1.accept(this);
+	      n.f2.accept(this);
 
-      VariableTable _variable = new VariableTable();
-      _variable.position = position++;
-      _variable.previousPointer = current;
-      _variable.type = typeOfReturn;
-      if(current instanceof ClassTable) {
-    	  _variable.isInstance = true;
-    	  ((ClassTable) currentClass).variables.put(n.f1.f0.tokenImage,_variable);
-    	  //System.out.println(currentClass.className);
+	      return (R)_variable;
+      } else {
+    	  n.f0.accept(this);
+    	  n.f1.accept(this);
+    	  n.f2.accept(this);
     	  
-      } else if (current instanceof FunctionTable) {
-    	  ((FunctionTable) current).localVars.put(n.f1.f0.tokenImage, _variable);
-      }
-    	  
-      n.f1.accept(this);
-      n.f2.accept(this);
-      return (R)_variable;
-      //return _ret;
+    	}
+      return _ret;
    }
 
    /**
@@ -289,35 +385,123 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(MethodDeclaration n) {
       R _ret=null;
       
-     
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      
-      FunctionTable _function = new FunctionTable();
-      _function.previousPointer = currentClass;
-      _function.returnType = typeOfReturn;
-      ClassTable _class = currentClass;
-      _class.functions.put(n.f2.f0.tokenImage, _function);
-      current = _function;
-      position = 0;
-     
-      n.f3.accept(this);
-      n.f4.accept(this);
-      n.f5.accept(this);
-      
-      position = 0;
-      
-      n.f6.accept(this);
-      n.f7.accept(this);
-      n.f8.accept(this);
-      n.f9.accept(this);
-      n.f10.accept(this);
-      n.f11.accept(this);
-      n.f12.accept(this);
-      //System.out.println("==========" + n.f2.f0.tokenImage + "===========");
-      //System.out.println(_function.localVars.keySet());
-      return (R) _function;
+      if(parseNumber == 0) {
+	      FunctionTable _function = new FunctionTable();
+	      current = _function;
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      _function.returnType = typeOfReturn;
+	      n.f2.accept(this);
+	      _function.previousPointer = currentClass;
+	      ClassTable _class = currentClass;
+	      _class.functions.put(n.f2.f0.tokenImage, _function);
+	      position = 0;
+	     
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+	      
+	      position = 0;
+	      
+	      n.f6.accept(this);
+	      n.f7.accept(this);
+	      n.f8.accept(this);
+	      n.f9.accept(this);
+	      n.f10.accept(this);
+	      n.f11.accept(this);
+	      n.f12.accept(this);
+	      //System.out.println(_function.orderedParameters + " : " + n.f2.f0.tokenImage);
+	      //System.out.println("==========" + n.f2.f0.tokenImage + "===========");
+	      //System.out.println(_function.localVars.keySet());
+	      //System.out.println("-----------------" + _function.returnType + "--------------------------");
+	      return (R) _function;
+	      } else {
+	    	  //Check function now after table is built
+	    	  //Now current class is what I have, so from this I also can check the function in it's scope
+	    	  //System.out.println(n.f2.f0.tokenImage);
+	    	  FunctionTable f = (FunctionTable) (currentClass.findFunctions(n.f2.f0.tokenImage));
+	    	  current = f;
+	    	  n.f0.accept(this);
+	  	      n.f1.accept(this);
+	  	      String id = n.f2.f0.tokenImage;
+	  	      ClassTable tempCurrent = currentClass; 
+	  	      //System.out.println(currentClass.isExtends + "Extends?");
+	  	      if(currentClass.isExtends){
+	  	    	  //The class we are in inherits from another class
+	  	    	  //So now go and check if the class it extends from 
+	  	    	  boolean flag = true;
+	  	    	  while(tempCurrent.isExtends){
+	  	    		  ClassTable tempExtends = (ClassTable) g.find(tempCurrent.extendsClassName);
+	  	    		  FunctionTable tempFunc = (FunctionTable) tempCurrent.findFunctions(n.f2.f0.tokenImage);
+	  	    		  FunctionTable tempExtendFunction = (FunctionTable) tempExtends.findFunctions(n.f2.f0.tokenImage);
+	  	    		  if(tempExtendFunction != null){
+	  	    			  //If temp function's return type extends from tempExtended function's return type.
+	  	    			  if(!tempFunc.returnType.equals(tempExtendFunction.returnType)){
+	  	    				  boolean flags = false;
+	  	    				  
+	  	    				  ClassTable tmp = (ClassTable)g.find(tempFunc.returnType);
+	  	    				  ClassTable tmpExt = (ClassTable)g.find(tempExtendFunction.returnType);
+	  	    				  if(tmp == null || tmpExt == null){
+	  	    					  System.err.print("Type of function mismatch");
+	  	    					  System.exit(1);
+	  	    				  }
+	  	    				  while(tmp.isExtends){
+	  	    					  if(tmp.extendsClassName == tmpExt.className)
+	  	    						  {flags = true; break;}
+	  	    					  tmp = tmpExt;
+	  	    				  }
+	  	    				  if(flags == false){
+		  	    				  System.err.print("Different return types of inherited function and fn.");
+		  	    				  System.exit(1);
+	  	    				  }
+	  	    			  }
+	  	    			  
+	  	    			  if(!tempFunc.orderedParameters.equals(tempExtendFunction.orderedParameters)){
+	  	    				  System.err.print("Different return types of inherited function and fn.");
+	  	    				  System.exit(1);
+	  	    			  }
+	  	    		  }
+	  	    		  tempCurrent = tempExtends;
+	    		  	    
+	  	    	  }
+	  	     }
+	  	      position = 0;
+	  	      
+	  	      n.f3.accept(this);
+	  	      n.f4.accept(this);
+	  	      n.f5.accept(this);
+	  	      
+	  	      position = 0;
+	  	      
+	  	      n.f6.accept(this);
+	  	      n.f7.accept(this);
+	  	      n.f8.accept(this);
+	  	      n.f9.accept(this);
+	  	      String exp = (String) n.f10.accept(this);
+	  	      n.f11.accept(this);
+	  	      n.f12.accept(this);
+	  	     
+	  	      if(!f.returnType.equals(exp)){
+	  	    	  //Now check if exp has type of any of it's inherited classes until isExtends is true
+	  	    	  boolean flag = false;
+	  	    	  if(g.find(f.returnType)!=null && g.find(exp)!=null){
+	  	    		  ClassTable tmpClass = (ClassTable)g.find(exp);
+	  	    		  if(tmpClass.isExtends){
+	  	    			  while(tmpClass.isExtends){
+	  	    				  if(tmpClass.extendsClassName.equals(f.returnType))
+	  	    				  { flag = true; break;}
+	  	    				  tmpClass = (ClassTable)g.find(tmpClass.extendsClassName);
+	  	    			  }
+	  	    		  }
+	  	    	  }
+	  	    	  if(flag == false){
+	  	    	  System.err.println("Return type doesn't match + "  + f.returnType + " " + exp);
+	  	    	  System.exit(1);
+	  	    	  }
+	  	      }
+	  	      
+	      }
+      return _ret;
       //return _ret;
    }
 
@@ -339,17 +523,24 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(FormalParameter n) {
       R _ret=null;
       n.f0.accept(this);
-      
-      VariableTable _formalParam = new VariableTable();
-      _formalParam.position = position++;
-      _formalParam.previousPointer = current;
-      _formalParam.isFormal = true;
-      _formalParam.type = typeOfReturn;
-      
-      FunctionTable _function = (FunctionTable) current;
-      _function.parameters.put(n.f1.f0.tokenImage, _formalParam);
-      _function.orderedParameters.add(_formalParam);
+      if(parseNumber == 0) {
+	      VariableTable _formalParam = new VariableTable();
+	      _formalParam.position = position++;
+	      _formalParam.previousPointer = current;
+	      _formalParam.isFormal = true;
+	      _formalParam.type = typeOfReturn;
+	      
+	      FunctionTable _function = (FunctionTable) current;
+	      if(_function.parameters.get(n.f1.f0.tokenImage) == null)
+	      	_function.parameters.put(n.f1.f0.tokenImage, _formalParam);
+	      else {
+	    	  System.err.print("Redifined formal parameter");
+	    	  System.exit(1);
+	      }
+	      _function.orderedParameters.add(_formalParam.type);
+      } 
       n.f1.accept(this);
+
       //return _formalParam
       return _ret;
    }
@@ -446,10 +637,42 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(AssignmentStatement n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
+      if(parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	  } else {
+		  String id = (String)n.f0.accept(this);
+		  VariableTable v = (VariableTable)current.findVariables(id);
+		  if(v==null && currentClass.isExtends){
+			  //TODO
+			  //System.out.println(id + n.f0.f0.beginLine);
+			  ClassTable tempCurrent = currentClass;
+			  while(tempCurrent.isExtends && v==null){
+				  //System.out.println("Came here");
+				  ClassTable tempExtendsClass = (ClassTable)g.find(tempCurrent.extendsClassName);
+				  v = (VariableTable)tempExtendsClass.findVariables(id);
+				  tempCurrent = tempExtendsClass;
+			  }
+		  }
+		  if(v==null){
+			  System.err.print("Variable not declared anywhere");
+			  System.exit(1);
+		  }
+		  String idType = v.type;
+		  n.f1.accept(this);
+	      String exp = (String) n.f2.accept(this);
+	      n.f3.accept(this);
+	      if(!(idType.equals(exp))){
+	    	  //Check if extended parent classes
+	    	  
+	    	  System.err.print("ID = EXP; Types don't match" + id);
+	    	  System.exit(1);  
+	      }
+	      
+	      
+	  }
       return _ret;
    }
 
@@ -464,13 +687,46 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(ArrayAssignmentStatement n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
-      n.f4.accept(this);
-      n.f5.accept(this);
-      n.f6.accept(this);
+      if (parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+	      n.f6.accept(this);
+      } else {
+    	  String id = (String)n.f0.accept(this);
+	      VariableTable v = (VariableTable)current.findVariables(id);
+	      if(v==null && currentClass.isExtends){
+			  //TODO
+			  ClassTable tempCurrent = currentClass;
+			  while(tempCurrent.isExtends && v==null){
+				  ClassTable tempExtendsClass = (ClassTable)g.findVariables(tempCurrent.extendsClassName);
+				  v = (VariableTable)tempExtendsClass.findVariables(id);
+				  tempCurrent = tempExtendsClass;
+			  }
+		  }
+		  if(v==null){
+			  System.err.print("Variable not declared anywhere");
+			  System.exit(1);
+		  }
+		  
+	      String idType = v.type;
+    	  n.f1.accept(this);
+	      String array_index = (String) n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      String expression = (String)n. f5.accept(this);
+	      n.f6.accept(this);
+	      
+	      if((!expression.equals("int") || !idType.equals("int []")) || !array_index.equals("int")) {
+	    	  //error
+	    	  System.err.print("Array problem array[index] = expression type" + idType + array_index + expression);
+	    	  System.exit(1);
+	      } 
+	      
+      }
       return _ret;
    }
 
@@ -485,13 +741,29 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(IfStatement n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
-      n.f4.accept(this);
-      n.f5.accept(this);
-      n.f6.accept(this);
+      if(parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+	      n.f6.accept(this);
+      } else {
+    	  n.f0.accept(this);
+    	  n.f1.accept(this);
+	      String expType = (String) n.f2.accept(this);
+	      if(!expType.equals("boolean")) {
+	    	  System.err.print("if Exp stmt else stmt error : type of exp");
+	    	  System.exit(1);
+	      }
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+	      n.f6.accept(this);
+	      
+      }
+      
       return _ret;
    }
 
@@ -504,11 +776,25 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(WhileStatement n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
-      n.f4.accept(this);
+      if(parseNumber == 0){
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	  } else {
+		  n.f0.accept(this);
+	      n.f1.accept(this);
+	      String exp = (String)n.f2.accept(this);
+	      if(!exp.equals("boolean")) {
+	    	  System.err.print("while(exp) then stmt err : Exp type is not boolean");
+	    	  System.exit(1);
+	      }
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      
+	  }
+      
       return _ret;
    }
 
@@ -523,7 +809,14 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
       R _ret=null;
       n.f0.accept(this);
       n.f1.accept(this);
-      n.f2.accept(this);
+      if(parseNumber == 1) {
+    	  String str = (String) n.f2.accept(this);	
+    	  if(!str.equals("int")) {
+    		  System.err.print("Type error: Found " + "\" " + str + "\" " + " but expected int");
+    		  System.exit(1);
+    	  }
+      }
+      else n.f2.accept(this);
       n.f3.accept(this);
       n.f4.accept(this);
       return _ret;
@@ -542,7 +835,8 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(Expression n) {
       R _ret=null;
-      n.f0.accept(this);
+      if(parseNumber == 1) _ret = n.f0.accept(this);
+      else n.f0.accept(this);
       return _ret;
    }
 
@@ -553,9 +847,22 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(AndExpression n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
+      if(parseNumber == 0) {
+		  n.f0.accept(this);
+		  n.f1.accept(this);
+		  n.f2.accept(this);
+      }
+      else {
+          String p1 = (String) n.f0.accept(this);
+          n.f1.accept(this);
+          String p2 = (String) n.f2.accept(this);
+          //TODO : Check if I have to add more conditions here
+          if((!(p1.equals("boolean")) || !(p2.equals("boolean")))){
+        	  System.err.print("Types don't match PrimExp & PrimExp");
+        	  System.exit(1);
+          }
+          else _ret = (R)"boolean";
+      }
       return _ret;
    }
 
@@ -566,9 +873,24 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(CompareExpression n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
+      if(parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	  }
+      else {
+    	  String p1 = (String) n.f0.accept(this);
+    	  n.f1.accept(this);
+	      String p2 = (String) n.f2.accept(this);  
+	      if(!(p1.equals("int")) || !(p2.equals("int"))){
+        	  System.err.print("Types don't match PrimExp < PrimExp");
+        	  System.exit(1);
+          }
+          
+	      else {
+	    	  _ret = (R)"boolean";
+	      }
+      }
       return _ret;
    }
 
@@ -579,9 +901,21 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(PlusExpression n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
+      if(parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+      }
+      else {
+    	  String p1 = (String) n.f0.accept(this);
+	      n.f1.accept(this);
+	      String p2 = (String) n.f2.accept(this);  
+	      if(!(p1.equals("int")) || !(p2.equals("int"))){
+        	  System.err.print("Types don't match PrimExp + PrimExp");
+        	  System.exit(1);
+          }
+          else _ret = (R)"int";
+      }
       return _ret;
    }
 
@@ -592,9 +926,21 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(MinusExpression n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
+      if(parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+      }
+      else {
+    	  String p1 = (String) n.f0.accept(this);
+	      n.f1.accept(this);
+	      String p2 = (String) n.f2.accept(this);  
+	      if(!(p1.equals("int")) || !(p2.equals("int"))){
+        	  System.err.print("Types don't match PrimExp - PrimExp");
+        	  System.exit(1);
+          }
+          else _ret = (R)"int";
+      }
       return _ret;
    }
 
@@ -605,9 +951,21 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(TimesExpression n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
+      if(parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+      }
+      else {
+    	  String p1 = (String) n.f0.accept(this);
+	      n.f1.accept(this);
+	      String p2 = (String) n.f2.accept(this);
+	      if(!(p1.equals("int")) || !(p2.equals("int"))){
+        	  System.err.print("Types don't match PrimExp * PrimExp");
+        	  System.exit(1);
+          }
+          else _ret = (R)"int";
+      }
       return _ret;
    }
 
@@ -619,10 +977,24 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(ArrayLookup n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
+      if (parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+      }
+      else {
+    	  String p1 = (String) n.f0.accept(this);
+	      n.f1.accept(this);
+	      String str = (String) n.f2.accept(this);
+	      n.f3.accept(this);
+	      
+	      if(!(str.equals("int")) || ! (p1.equals("int []"))){
+	    	  System.err.print("Primary Lookup in Array error");
+	    	  System.exit(1);
+	      }
+	      else return (R) "int";
+      }
       return _ret;
    }
 
@@ -633,9 +1005,21 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(ArrayLength n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
+      if (parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);  
+	  }
+      else {
+	      String p1Type = (String)n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      if(!p1Type.equals("int []")){
+	    	  System.err.print("PrimExp() is not an array in PrimExp.length");
+	    	  System.exit(1);
+	      }
+	      else _ret = (R)"int";
+	  }
       return _ret;
    }
 
@@ -649,12 +1033,103 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(MessageSend n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
-      n.f4.accept(this);
-      n.f5.accept(this);
+      
+      // TODO : Handle things like this/identifier . functionName ( Expression List )
+      // TODO : Have to check the symbol table for this
+      if(parseNumber == 0) {
+	      n.f0.accept(this);
+	      n.f1.accept(this);
+	      n.f2.accept(this);
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      n.f5.accept(this);
+      } else {
+    	  paramStack.push(params);
+    	  params = new ArrayList<String>();
+          String constructorClassName= (String)n.f0.accept(this);
+          
+          n.f1.accept(this);
+	      String someFunction = (String) n.f2.accept(this);
+	      if(constructorClassName.equals("int []") || constructorClassName.equals("boolean") || constructorClassName.equals("int")) {
+	    	  System.err.print("Not an object type");
+	    	  System.exit(1);
+	      }
+	      ClassTable _class = (ClassTable)g.find(constructorClassName);
+	      
+	      if(_class == null) {
+	    	  _class = currentClass;
+	    	  ClassTable extClass;
+	    	  while(_class.isExtends && _class.find(constructorClassName)==null){
+	    		  //System.out.println("came here");
+	    		  _class =(ClassTable)g.find(_class.extendsClassName);
+	    		}
+	    	  if(_class.find(constructorClassName) != null){
+	    		  VariableTable v = (VariableTable)_class.find(constructorClassName);
+	    		  constructorClassName = v.type;
+	    		  _class = (ClassTable)g.find(constructorClassName);
+	    	  }
+	    	  
+	    	  if(_class == null){
+		    	  System.err.println("Can't have type as not class"+n.f2.f0.beginLine);
+		    	  System.exit(1);
+	    	  }
+	      }
+	      
+	      
+	      FunctionTable _func = (FunctionTable)_class.functions.get(n.f2.f0.tokenImage);
+	      if (_func== null){
+	    	  //Check if the function exists in the parent classes
+	    	  while(_class.isExtends&&_func == null){
+	    		  _class = (ClassTable)g.find(_class.extendsClassName);
+	    		  //System.out.println(_class.className);
+	    		  _func = (FunctionTable)_class.functions.get(n.f2.f0.tokenImage);
+	    	  }
+	    	  if(_func == null) {
+	    	  System.err.print("Function"+ n.f2.f0.tokenImage + " not found in "+ constructorClassName + "   " + n.f2.f0.beginLine  );
+	    	  System.exit(1);
+	    	  }
+	    	  _ret = (R) _func.returnType;
+	      }
+	      else {
+	    	  _ret = (R)_func.returnType;
+	      }
+	      n.f3.accept(this);
+	      n.f4.accept(this);
+	      //TODO : For the same function check if the parameters are accessible in this scope and
+	      //If the types of them are same as those of the formal parameters.
+	     
+	      if(!_func.orderedParameters.equals(params)){
+	    	  
+	    	  if(_func.orderedParameters.size() == params.size()){
+	    		  for(int i = 0; i < params.size(); i++){
+	    			  if(g.find(params.get(i))!=null && g.find(_func.orderedParameters.get(i))!=null){
+	    				  ClassTable tempClass = (ClassTable)g.find(params.get(i));
+	    				  while(tempClass.isExtends){
+	    					  String _extendedName = tempClass.extendsClassName;
+	    					  ClassTable tempExtendedClass = (ClassTable)g.find(_extendedName);
+	    					  if(_extendedName.equals(_func.orderedParameters.get(i))) {
+	    						  params.set(i, _extendedName);
+	    						  break;  
+	    					  }
+	    					  tempClass = tempExtendedClass;
+	    				  }
+	    				  
+	    			  }
+	    			  
+	    		  }
+	    	  }
+	    	  if(!_func.orderedParameters.equals(params)) {
+		    	  //System.out.println(constructorClassName);
+		    	  //System.out.println(_func.orderedParameters);
+		    	  //System.out.println(params);
+		    	  System.err.println("Parameter type mismatch" + n.f2.f0.beginLine);
+		    	  System.exit(1);
+	    	  }
+	      }
+	      params.clear();
+	      n.f5.accept(this);
+	      params = paramStack.pop();
+      }
       return _ret;
    }
 
@@ -664,8 +1139,10 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(ExpressionList n) {
       R _ret=null;
-      n.f0.accept(this);
-      n.f1.accept(this);
+      if(parseNumber == 1) {
+    	  params.add((String)n.f0.accept(this));
+      }	//First Parameter
+      n.f1.accept(this);	//Go down and check the remaining parameters
       return _ret;
    }
 
@@ -676,7 +1153,11 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(ExpressionRest n) {
       R _ret=null;
       n.f0.accept(this);
-      n.f1.accept(this);
+      if(parseNumber == 1) {
+    	  _ret = n.f1.accept(this);
+    	  params.add((String)_ret);
+      }
+      else n.f1.accept(this);
       return _ret;
    }
 
@@ -693,7 +1174,52 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(PrimaryExpression n) {
       R _ret=null;
-      n.f0.accept(this);
+      if(parseNumber == 1) {
+
+    	  _ret = n.f0.accept(this);
+    	  if(n.f0.which == 3){
+    		 // return (R)_ret;
+    		  String s = (String)_ret;
+    		  /*
+    		  System.out.println(_ret);
+    		  System.out.println(f.localVars.keySet() + " " + _ret);
+    		  
+    		  System.out.println(currentClass.functions.get(f));
+    		  System.out.println(currentClass.className);
+    		  System.out.println(_ret);
+    		  System.out.println(f.localVars.keySet());
+    		  System.out.println(f.find((String)_ret));
+    		  System.out.println(f.localVars.get(s));
+    		  System.out.println("--------------------------");
+    		  if(!(current.findVariables(s) instanceof VariableTable)){
+    			  System.err.print("Not a variable");
+    			  System.exit(1);
+    		  }*/
+    		  //System.out.println(current.findVariables(s) instanceof VariableTable);
+    		  VariableTable v = null;
+    		  if(current.findVariables(s) instanceof VariableTable)
+    			  v = (VariableTable)current.findVariables((String)_ret);
+    		  if(v == null){
+    			  //System.out.println(f);
+    			  //System.out.println(_ret + " " + currentClass.className + currentClass.variables.keySet());
+	    		  
+    			  ClassTable tempCurrentClass = currentClass;
+	    		  while(tempCurrentClass.isExtends==true && v==null){
+	    			  ClassTable tempExtendsClass = (ClassTable)g.find(tempCurrentClass.extendsClassName);
+	    			  v = (VariableTable)tempExtendsClass.findVariables((String)_ret);
+	    			  tempCurrentClass = tempExtendsClass;
+	    		  }
+	    		  if(v==null)
+	    		  {
+	    			  System.err.print("Variable not found");
+	    			  System.exit(1);
+	    		  }
+    			  
+    		  }
+	    	  else _ret = (R)v.type;
+	    	}
+      }
+      else n.f0.accept(this);
       return _ret;
    }
 
@@ -703,6 +1229,7 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(IntegerLiteral n) {
       R _ret=null;
       n.f0.accept(this);
+      if(parseNumber == 1) _ret = (R) "int";
       return _ret;
    }
 
@@ -712,6 +1239,7 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(TrueLiteral n) {
       R _ret=null;
       n.f0.accept(this);
+      if(parseNumber == 1) _ret = (R)"boolean";
       return _ret;
    }
 
@@ -721,6 +1249,7 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(FalseLiteral n) {
       R _ret=null;
       n.f0.accept(this);
+      if(parseNumber == 1) _ret = (R)"boolean";
       return _ret;
    }
 
@@ -728,11 +1257,14 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     * f0 -> <IDENTIFIER>
     */
    public R visit(Identifier n) {
+	   //IMPORTANT : Only for identifiers we will return the identifier name and not the type..
+	   
       R _ret=null;
       n.f0.accept(this);
-      //_ret = (R)n.f0.tokenImage;
-      //System.out.println(_ret);
       typeOfReturn = n.f0.tokenImage;
+      if(parseNumber == 1) {
+    	_ret = (R) n.f0.tokenImage;
+      }
       return _ret;
    }
 
@@ -742,6 +1274,7 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(ThisExpression n) {
       R _ret=null;
       n.f0.accept(this);
+      if(parseNumber == 1) return (R)currentClass.className;
       return _ret;
    }
 
@@ -757,8 +1290,21 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
       n.f0.accept(this);
       n.f1.accept(this);
       n.f2.accept(this);
-      n.f3.accept(this);
-      n.f4.accept(this);
+      if(parseNumber == 1) {
+    	  String temp = (String)n.f3.accept(this);
+    	  if(temp.equals("int"))
+    	  {
+    		_ret = (R) "int []";  
+    	  }
+    	  else {//error
+    		  System.err.print("Array new declaration bound not int.");
+    		  System.exit(1);
+    	  }
+    	}
+      else  {
+    	  n.f3.accept(this);
+          n.f4.accept(this);
+      }
       return _ret;
    }
 
@@ -772,6 +1318,19 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
       R _ret=null;
       n.f0.accept(this);
       n.f1.accept(this);
+	  
+      if(parseNumber == 1) {
+    	  //TODO : Only constructors?
+    	  // Identifier should be of class type i.e now we have the class name.
+    	  // Go and check if such a class name exists
+    	  ClassTable cl = (ClassTable)g.find(n.f1.f0.tokenImage);
+    	  if(cl == null) {
+    		  System.err.print(n.f1.f0.tokenImage + " class does not exist.");
+    		  System.exit(1);
+    	  }
+    	  else _ret = (R) n.f1.f0.tokenImage;
+      }
+      
       n.f2.accept(this);
       n.f3.accept(this);
       return _ret;
@@ -784,7 +1343,15 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(NotExpression n) {
       R _ret=null;
       n.f0.accept(this);
-      n.f1.accept(this);
+      if(parseNumber == 1){ 
+    	  String str =(String) n.f1.accept(this);
+    	  if(!(str.equals("boolean"))) {
+    		  System.err.print("Expression did not return boolean. The '!' operator cannot be applied");
+    		  System.exit(1);
+    	  }
+    	  else _ret = (R)"boolean";
+       }
+      else n.f1.accept(this);
       return _ret;
    }
 
@@ -796,7 +1363,8 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
    public R visit(BracketExpression n) {
       R _ret=null;
       n.f0.accept(this);
-      n.f1.accept(this);
+      if(parseNumber == 1)_ret = n.f1.accept(this);
+      else n.f1.accept(this);
       n.f2.accept(this);
       return _ret;
    }
