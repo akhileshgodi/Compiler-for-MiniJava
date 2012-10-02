@@ -10,8 +10,7 @@ class BubbleSort{
 // using Bublesort
 class BBS{
     
-    int [] BBS;
-    int[] number ;
+    int[] BBS;
     int size ;
 
     // Invoke the Initialization, Sort and Printing
@@ -45,13 +44,13 @@ class BBS{
 	    //aux03 = i+1 ;
 	    while (j < (i+1)){
 		aux07 = j - 1 ;
-		aux04 = number[aux07] ;
-		aux05 = number[j] ;
+		aux04 = BBS[aux07] ;
+		aux05 = BBS[j] ;
 		if (aux05 < aux04) {
 		    aux06 = j - 1 ;
-		    t = number[aux06] ;
-		    number[aux06] = number[j] ;
-		    number[j] = t;
+		    t = BBS[aux06] ;
+		    BBS[aux06] = BBS[j] ;
+		    BBS[j] = t;
 		}
 		else nt = 0 ;
 		j = j + 1 ;
@@ -66,7 +65,7 @@ class BBS{
 	int j ;
 	j = 0 ;
 	while (j < (size)) {
-	    System.out.println(number[j]);
+	    System.out.println(BBS[j]);
 	    j = j + 1 ;
 	}
 	return 0 ;
@@ -75,18 +74,18 @@ class BBS{
     // Initialize array of integers
     public int Init(int sz){
 	size = sz ;
-	number = new int[sz] ;
+	BBS = new int[sz] ;
 	
-	number[0] = 20 ;
-	number[1] = 7  ; 
-	number[2] = 12 ;
-	number[3] = 18 ;
-	number[4] = 2  ; 
-	number[5] = 11 ;
-	number[6] = 6  ; 
-	number[7] = 9  ; 
-	number[8] = 19 ; 
-	number[9] = 5  ;
+	BBS[0] = 20 ;
+	BBS[1] = 7  ; 
+	BBS[2] = 12 ;
+	BBS[3] = 18 ;
+	BBS[4] = 2  ; 
+	BBS[5] = 11 ;
+	BBS[6] = 6  ; 
+	BBS[7] = 9  ; 
+	BBS[8] = 19 ; 
+	BBS[9] = 5  ;
 	
 	return 0 ;	
     }

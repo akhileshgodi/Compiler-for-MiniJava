@@ -1,6 +1,0 @@
-import visitor.Visitor;
-import syntaxtree.*;
-
-public class SymbolTableBuilder implements Visitor {
-
-}

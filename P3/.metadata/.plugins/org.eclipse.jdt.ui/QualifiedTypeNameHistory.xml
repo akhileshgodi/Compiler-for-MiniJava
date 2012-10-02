@@ -17,7 +17,7 @@
 <fullyQualifiedTypeName name="java.util.ArrayList"/>
 <fullyQualifiedTypeName name="java.lang.Class"/>
 <fullyQualifiedTypeName name="visitor.TableContents"/>
-<fullyQualifiedTypeName name="visitor.FunctionTable"/>
 <fullyQualifiedTypeName name="visitor.ClassTable"/>
+<fullyQualifiedTypeName name="visitor.FunctionTable"/>
 <fullyQualifiedTypeName name="java.lang.System"/>
 </qualifiedTypeNameHistroy>

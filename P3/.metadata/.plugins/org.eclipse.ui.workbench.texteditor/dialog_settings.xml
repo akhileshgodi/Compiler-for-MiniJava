@@ -2,29 +2,31 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
 		<item value="318" key="DIALOG_WIDTH"/>
-		<item value="42" key="DIALOG_Y_ORIGIN"/>
-		<item value="467" key="DIALOG_HEIGHT"/>
-		<item value="978" key="DIALOG_X_ORIGIN"/>
+		<item value="46" key="DIALOG_Y_ORIGIN"/>
+		<item value="1046" key="DIALOG_X_ORIGIN"/>
+		<item value="438" key="DIALOG_HEIGHT"/>
 		<item value="1|Ubuntu|11.0|0|GTK|1|" key="DIALOG_FONT_NAME"/>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="true" key="wrap"/>
-		<item value="false" key="isRegEx"/>
 		<item value="false" key="casesensitive"/>
+		<item value="false" key="isRegEx"/>
 		<item value="false" key="incremental"/>
 		<item value="false" key="wholeword"/>
-		<item value="instanceof" key="selection"/>
+		<item value="func" key="selection"/>
 		<list key="findhistory">
-			<item value="MessageSend"/>
-			<item value="instanceof"/>
-			<item value="instance of"/>
-			<item value="= &quot;int&quot;"/>
-			<item value="if exp"/>
-			<item value="currentClass"/>
-			<item value="&quot;Blah&quot;"/>
-			<item value="PrintSta"/>
+			<item value="func"/>
+			<item value="funcextends"/>
+			<item value="extendsfunc"/>
+			<item value="System.out.print"/>
+			<item value="System.out.println"/>
+			<item value="System.exit"/>
+			<item value="System.eXIT"/>
+			<item value="System.err"/>
 		</list>
 		<list key="replacehistory">
+			<item value="Sys"/>
+			<item value="System.out.print"/>
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.GotoLineAction$GotoLineDialog_dialogBounds">
