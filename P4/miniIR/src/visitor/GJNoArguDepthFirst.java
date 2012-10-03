@@ -79,7 +79,6 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
       n.f0.accept(this);
       n.f1.accept(this);
       n.f2.accept(this);
-      
       return (R)g;
    }
 
@@ -104,6 +103,7 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(MainClass n) {
       R _ret=null;
+      currentClass = (ClassTable) g.find(n.f1.f0.tokenImage);
       n.f0.accept(this);
       n.f1.accept(this);
       n.f2.accept(this);
@@ -144,13 +144,23 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(ClassDeclaration n) {
       R _ret=null;
+      currentClass = (ClassTable)g.find(n.f1.f0.tokenImage);
       n.f0.accept(this);
       n.f1.accept(this);
       n.f2.accept(this);
       n.f3.accept(this);
       n.f4.accept(this);
       n.f5.accept(this);
+      /*
+      FunctionTable tmpF;
+      int l = currentClass.allFunctions.size();
+      for(int j = 0 ; j < l/2; j++){
+    	  tmpF = currentClass.allFunctions.get(j);
+    	  currentClass.allFunctions.setElementAt(currentClass.allFunctions.elementAt(l-j-1), j);
+    	  currentClass.allFunctions.setElementAt(tmpF, l-j-1);
+      }*/
       return _ret;
+      
    }
 
    /**
@@ -165,6 +175,69 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     */
    public R visit(ClassExtendsDeclaration n) {
       R _ret=null;
+      currentClass= (ClassTable)g.find(n.f1.f0.tokenImage);
+      ClassTable tmpClass = currentClass;
+      Vector < ClassTable> classes = new Vector<ClassTable>();
+      classes.add(tmpClass);
+      ClassTable extClass;
+      while(tmpClass.isExtends){
+    	  extClass = (ClassTable)g.find(tmpClass.extendsClassName);
+    	  tmpClass = extClass;
+    	  classes.add(tmpClass);
+      }
+      for(int i = 1; i < classes.size(); i++){
+			for(int j = 0; j < classes.elementAt(i).allVariables.size(); j++){
+				VariableTable v = classes.elementAt(i).allVariables.elementAt(j);
+				currentClass.allVariables.add(v);
+				currentClass.allVariables.elementAt(currentClass.globalOffset).position = currentClass.globalOffset;
+				currentClass.globalOffset++;
+			}
+		}
+      int i, j, k;
+		
+		//add parents' methods to current class and cover the duplicated
+      for(i = classes.size() - 1; i > 0; i--){
+		  for(j = 0; j < classes.elementAt(i).allFunctions.size(); j++){
+			  boolean flag = false;
+			  for(k = 0; k < currentClass.methodOffset; k++){
+				   if(currentClass.allFunctions.elementAt(k).funcName.equals(classes.elementAt(i).allFunctions.elementAt(j).funcName)){
+						flag = true;
+						currentClass.allFunctions.remove(k);
+						currentClass.allFunctions.insertElementAt(classes.elementAt(i).allFunctions.elementAt(j), k);
+						break;
+					}
+				}
+				if(!flag){
+					currentClass.allFunctions.insertElementAt(classes.elementAt(i).allFunctions.elementAt(j), currentClass.methodOffset);
+					currentClass.methodOffset++;
+				}
+			}
+		}
+		
+		//insert original methods
+		for(i = currentClass.methodOffset; i < currentClass.allFunctions.size();i++){
+			boolean flag = false;
+			for(j = 0; j < currentClass.methodOffset; j++){
+				if(currentClass.allFunctions.elementAt(i).funcName.equals(currentClass.allFunctions.elementAt(j).funcName)){
+					flag = true;
+					currentClass.allFunctions.remove(j);
+					currentClass.allFunctions.insertElementAt(currentClass.allFunctions.elementAt(i - 1), j);
+					break;
+				}
+			}
+			if(!flag){
+				currentClass.allFunctions.insertElementAt(currentClass.allFunctions.elementAt(i), currentClass.methodOffset);
+				currentClass.methodOffset++;
+				i++;
+			}
+		}
+		
+		//delete the original methods
+		for(i = currentClass.methodOffset; currentClass.allFunctions.size() > i;){
+			currentClass.allFunctions.remove(i);
+		}
+      
+      
       n.f0.accept(this);
       n.f1.accept(this);
       n.f2.accept(this);

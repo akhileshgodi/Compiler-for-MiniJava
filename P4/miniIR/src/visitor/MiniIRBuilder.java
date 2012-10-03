@@ -221,8 +221,8 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
       //DONE
 	  R _ret=null;
       n.f0.accept(this);
-      n.f1.accept(this);
-      n.f2.accept(this);
+      //n.f1.accept(this);
+      //n.f2.accept(this);
       FunctionTable f = (FunctionTable)currentClass.findFunctions(n.f2.f0.tokenImage);
       current = f;
       ClassTable c = (ClassTable)f.previousPointer;
@@ -726,6 +726,16 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
     * f4 -> ( ExpressionList() )?
     * f5 -> ")"
     */
+   
+   /*CALL
+	BEGIN
+		MOVE TEMP(new1) EXP
+		HLOAD TEMP(new2) TEMP(new1) 0
+		HLOAD TEMP(new3) TEMP(new2) TEMP(ID)
+	RETURN TEMP(new3)
+	END
+ '	(' TEMP(new1) EXP# ')'
+    */
    public R visit(MessageSend n) {
       // DONE
 	   R _ret=null;
@@ -741,6 +751,20 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
       ClassTable refClass = (ClassTable)g.find(className);
       if(refClass == null){
     	  VariableTable v = (VariableTable)current.findVariables(typeOfReturn);
+    	  if(v == null){
+    		  //Get from the allVariables vector
+    		  ClassTable tmpClass = currentClass;
+    		  ClassTable extClass;
+    		  while(tmpClass.isExtends){
+    			  extClass = (ClassTable)g.find(tmpClass.extendsClassName);
+    			  if(extClass.findVariables(typeOfReturn) != null){
+    				  v = (VariableTable) extClass.findVariables(typeOfReturn);
+    				  break;
+    			  }
+    			  tmpClass = extClass;
+    		  }
+    		  
+    	  }
     	  className = v.type;
     	  refClass = (ClassTable)g.find(className);
       }
@@ -751,21 +775,19 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
 	      ClassTable tmpClass = refClass;
 		  ClassTable extClass;
 		  while(tmpClass.isExtends){
-			  extClass = (ClassTable)g.find(refClass.extendsClassName);
+			  extClass = (ClassTable)g.find(tmpClass.extendsClassName);
 			  f = (FunctionTable)extClass.findFunctions(n.f2.f0.tokenImage);
 			  if(f!= null)
 				  break;
 			  tmpClass = extClass;
-		  }
+			}
       }
       System.out.println("HLOAD TEMP " + temp2 + " TEMP " + temp1 + " 0 ");
       System.out.println("HLOAD TEMP " + temp3 + " TEMP " + temp2 + " " + refClass.allFunctions.indexOf(f)*4 + " ");
       System.out.println("RETURN TEMP " + temp3 + " END ");
-      n.f2.accept(this);
+      //n.f2.accept(this);
       n.f3.accept(this);
-      
       System.out.print("( TEMP " + temp1 + " ");
-      
       n.f4.accept(this);
       //Code for expression list comes here.
       
@@ -881,18 +903,20 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
 	    	  }
 	    	  else{
 	              v = (VariableTable) current.findVariables(n.f0.tokenImage);
+	              /*
 	              if(v == null){
 		              ClassTable tmpClass = currentClass;
 		        	  ClassTable extClass;
 		        	  while(tmpClass.isExtends){
-		        		  extClass = (ClassTable)g.find(currentClass.extendsClassName);
+		        		  extClass = (ClassTable)g.find(tmpClass.extendsClassName);
 		        		  v = (VariableTable)extClass.findVariables(n.f0.tokenImage);
 		        		  if(v!= null)
 		        			  break;
 		        		  tmpClass = extClass;
 		        	  }
-	              }
+	              }*/
 	              if(v!=null){
+	            	  //System.out.println("Problem???" + v.type);
 	            	  int temp1 = temp++;
 	                  System.out.println("BEGIN HLOAD TEMP " + temp1 + " TEMP 0 " + (1 + currentClass.allVariables.indexOf(v))*4 + " ");
 	    	          System.out.println("RETURN TEMP " + temp1 + " END ");
@@ -900,10 +924,42 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
 	          }
 
 	      }
-	  }
+	      
+	      else{
+	          v = (VariableTable) currentClass.findVariables(n.f0.tokenImage);
+	          if(v == null){
+	              ClassTable tmpClass = currentClass;
+	        	  ClassTable extClass;
+	        	  while(tmpClass.isExtends){
+	        		  extClass = (ClassTable)g.find(tmpClass.extendsClassName);
+	        		  v = (VariableTable)extClass.findVariables(n.f0.tokenImage);
+	        		  if(v!= null)
+	        			  break;
+	        		  tmpClass = extClass;
+	        	  }
+	          }
+	          if(v!=null){
+	        	  int temp1 = temp++;
+	              System.out.println("BEGIN HLOAD TEMP " + temp1 + " TEMP 0 " + (1 +currentClass.allVariables.indexOf(v))*4 + " ");
+		          System.out.println("RETURN TEMP " + temp1 + " END ");
+	          }
+	      }
+	    
+      }
       /*
       else{
           v = (VariableTable) currentClass.findVariables(n.f0.tokenImage);
+          if(v == null){
+              ClassTable tmpClass = currentClass;
+        	  ClassTable extClass;
+        	  while(tmpClass.isExtends){
+        		  extClass = (ClassTable)g.find(tmpClass.extendsClassName);
+        		  v = (VariableTable)extClass.findVariables(n.f0.tokenImage);
+        		  if(v!= null)
+        			  break;
+        		  tmpClass = extClass;
+        	  }
+          }
           if(v!=null){
         	  int temp1 = temp++;
               System.out.println("BEGIN HLOAD TEMP " + temp1 + " TEMP 0 " + (1 +v.position)*4 + " ");
