@@ -1,13 +1,14 @@
 import syntaxtree.*;
 import visitor.*;
 
-public class Main {
+public class Simplify {
    public static void main(String [] args) {
 	  try {
          Node root = new MiniJavaParser(System.in).Goal();
          //System.out.println("Program parsed successfully");
-         SymbolTable s = root.accept(new SymbolTableVisitor()); // Your assignment part is invoked here.
-         s = root.accept(new GJNoArguDepthFirst(s));
+         SymbolTable s;
+         s = (SymbolTable)root.accept(new SymbolTableVisitor()); // Your assignment part is invoked here.
+         s = (SymbolTable)root.accept(new GJNoArguDepthFirst(s));
          root.accept(new MiniIRBuilder(s));
 	  }
       catch (ParseException e) {
