@@ -8,6 +8,8 @@ import syntaxtree.*;
 import java.lang.Thread.State;
 import java.util.*;
 
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane.MaximizeAction;
+
 
 import dataStructures.ControlFlowGraph;
 import dataStructures.StatementNode;
@@ -24,7 +26,10 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
    //
 
 	HashMap<String, HashMap<Integer, Integer>> registerAllocation;
+	HashMap<String, HashMap<Integer, Integer>> stackAllocation;
 	static int presentInstructionNumber = 0;
+	int stackPointer = 0;
+	int stackLocation = 0;	//Should this be GLOBAL ? : TODO
 	static String currentProcedure;
 	List<Integer> sortedStartPoint;
 	List<Integer> sortedEndPoint;
@@ -35,12 +40,14 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 	ControlFlowGraph presentCFG;
 	HashMap<String, ControlFlowGraph> allCFGs;
 	String registers[] = {"t0","t1","t2","t3","t4","t5","t6", "t7","t8", "t9 ","s0","s1","s2","s3","s4", "s5", "s6","s7"};
-	static int spillTemp = 0;
+	static int noOfSpillTemps = 0;
 	public LinearScan(HashMap<String, ControlFlowGraph> allCFGs){
 		this.allCFGs = allCFGs;
 		registerAllocation = new HashMap<String, HashMap<Integer,Integer>>();
+		stackAllocation = new HashMap<String, HashMap<Integer,Integer>>();
 		presentCFG = new ControlFlowGraph();
 		for(String label : allCFGs.keySet()){
+			stackLocation = 0;
 			presentCFG = allCFGs.get(label);
 			this.freeRegisters = new ArrayList<Integer>();
 			for(int i = 0 ; i < registers.length ; i++){
@@ -51,9 +58,43 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 			sortedStartPoint = new ArrayList<Integer>(presentCFG.startPoints.keySet());
 		    sortedEndPoint = new ArrayList<Integer>(presentCFG.endPoints.keySet());
 		    registerAllotted = new HashMap<Integer, Integer>();
+		    locationOnStack = new HashMap<Integer, Integer>();
 			LinearScanRegisterAllocation();
 			registerAllocation.put(label, registerAllotted);
+			stackAllocation.put(label, locationOnStack);
+			Vector<Integer> calleeSave = new Vector<Integer>();
+			for(int regForTemp : registerAllotted.values()){
+				if(regForTemp > 10 && !calleeSave.contains(regForTemp)){
+					calleeSave.add(regForTemp);
+				}
+			}
+			presentCFG.noOfCalleeSaveRegisters = calleeSave.size();
+			presentCFG.toStoreAndLoadCalleeSaveRegisters = calleeSave;
+			//Computing info for call stack size, et al.
+			for(StatementNode stmt : presentCFG.blocks){
+				if(stmt.isContainsCall()){
+					if(presentCFG.maxParams < stmt.callStackSize){
+						presentCFG.maxParams = stmt.callStackSize;
+					}
+					if(presentCFG.maxParams > 4){
+						presentCFG.maxParamsOnStack = presentCFG.maxParams - 4;
+					}
+					int callerCount = 0;
+					for(int i = 0 ; i < stmt.liveOut.size(); i++) {
+				    	  if(registerAllotted.containsKey(stmt.liveOut.get(i))){
+				    		  if(registerAllotted.get(stmt.liveOut.get(i)) < 10){
+				    			callerCount++;
+				    		  }
+				    	  }
+				    }
+					if(presentCFG.maxCallerSaveRegisters < callerCount){
+						presentCFG.maxCallerSaveRegisters = callerCount;
+					}
+				}
+			}
+			
 		}
+		
 		/*
 		for(String label : registerAllocation.keySet()){
 			HashMap<Integer, Integer> regAlloc = registerAllocation.get(label);
@@ -110,18 +151,17 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 	 * @param i
 	 */
 	private void SpillAtInterval(int interval) {
-		int stackLocation = 0;	//Should this be GLOBAL ? : TODO
 		int spillTemp = active.get(active.size()-1);
 		if(presentCFG.endPoints.get(spillTemp) > presentCFG.endPoints.get(sortedStartPoint.get(interval))){
 			registerAllotted.put(sortedStartPoint.get(interval), registerAllotted.get(spillTemp));
 			registerAllotted.remove(spillTemp);
-			//locationOnStack.put(spillTemp,stackLocation++);
+			locationOnStack.put(spillTemp,stackLocation++);
 			active.remove(active.indexOf(spillTemp));
 			active.add(sortedStartPoint.get(interval));
 			sortActive();
 		}
 		else {
-			//locationOnStack.put(spillTemp,stackLocation++);
+			locationOnStack.put(spillTemp,stackLocation++);
 		}
 	}
 
@@ -238,7 +278,8 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       currentProcedure = n.f0.tokenImage;
       presentCFG = allCFGs.get(currentProcedure);
       registerAllotted = registerAllocation.get(currentProcedure);
-      System.out.printf("MAIN [ 0 ] [ 25 ] [ 25 ]\n");
+      locationOnStack = stackAllocation.get(currentProcedure);
+      System.out.printf("MAIN [ 0 ] [ " + (presentCFG.maxCallerSaveRegisters + presentCFG.noOfCalleeSaveRegisters + locationOnStack.values().size()+ presentCFG.maxParamsOnStack )+ locationOnStack.values().size() +" ] " +"[ "  + presentCFG.maxParams + " ]\n");
       n.f1.accept(this);
       n.f2.accept(this);
       System.out.println("END ");
@@ -266,9 +307,11 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
    public R visit(Procedure n) {
       R _ret=null;
       //n.f0.accept(this);
+      System.out.println();
       presentInstructionNumber = 0;
       currentProcedure = n.f0.f0.tokenImage;
       presentCFG = allCFGs.get(currentProcedure);
+      locationOnStack = stackAllocation.get(currentProcedure);
       registerAllotted = registerAllocation.get(currentProcedure);
       System.out.printf(n.f0.f0.tokenImage + " ");
       n.f1.accept(this);
@@ -276,7 +319,9 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       n.f2.accept(this);
       n.f3.accept(this);
       System.out.printf(n.f3.tokenImage+ " ");
-      System.out.println("[ 25 ] [ 25 ]");
+      int itsParamsSizeOnStack = presentCFG.itsParamsSize - 4;
+      if(itsParamsSizeOnStack < 0) itsParamsSizeOnStack = 0;
+      System.out.printf("[ " + (itsParamsSizeOnStack + presentCFG.maxCallerSaveRegisters + presentCFG.noOfCalleeSaveRegisters + locationOnStack.values().size() + presentCFG.maxParamsOnStack) + " ] " + "[ "  + presentCFG.maxParamsOnStack + " ]\n");
       n.f4.accept(this);
       return _ret;
    }
@@ -327,8 +372,20 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
    public R visit(CJumpStmt n) {
       R _ret=null;
       n.f0.accept(this);
+      /*
+      if(registerAllotted.keySet().contains(Integer.parseInt(n.f1.f1.f0.tokenImage))){
+    	  String register = registers[registerAllotted.get(Integer.parseInt (n.f1.f0.tokenImage))];
+    	  System.out.printf(register + " ");
+      }
+      else {
+    	  //TODO : Position on the stack as it is being spilled.
+    	  System.out.println("SPILLED?" + n.f1.f0.tokenImage);
+    	  System.out.println("Entry Set : " + locationOnStack.entrySet());
+      }
       System.out.printf("CJUMP ");
+      */
       n.f1.accept(this);
+      
       n.f2.accept(this);
       System.out.println();
       presentInstructionNumber++;
@@ -397,7 +454,16 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       if(!(n.f2.f0.choice instanceof Call)){
 	      n.f0.accept(this);
 	      System.out.printf("MOVE ");
-	      n.f1.accept(this);
+	      //n.f1.accept(this);
+	      if(registerAllotted.keySet().contains(Integer.parseInt(n.f1.f1.f0.tokenImage))){
+	    	  String register = registers[registerAllotted.get(Integer.parseInt (n.f1.f1.f0.tokenImage))];
+	    	  System.out.printf(register + " ");
+	      }
+	      else {
+	    	  //TODO : Position on the stack as it is being spilled.
+	    	  System.out.println("SPILLED?" + n.f1.f1.f0.tokenImage);
+	    	  System.out.println("Entry Set : " + locationOnStack.entrySet());
+	      }
 	      boolean flag = true;
 	      if(n.f2.f0.choice instanceof SimpleExp){
 	    	  SimpleExp node = (SimpleExp)n.f2.f0.choice;
@@ -407,7 +473,6 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 	    		  System.out.printf(l.f0.tokenImage);
 	    	  }
 	      }
-	      
 	      if(flag == true){
 	    	  n.f2.accept(this);
 	    	  n.f0.accept(this);
@@ -467,6 +532,10 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       R _ret=null;
       n.f0.accept(this);
       StatementNode stmt = presentCFG.blocks.get(presentInstructionNumber);
+      int k = 0;
+      for(int toStore : presentCFG.toStoreAndLoadCalleeSaveRegisters){
+    	  System.out.println("ASTORE SPILLEDARG " + (presentCFG.maxParamsOnStack + (k++)) + " " + registers[toStore]);
+      }
       for(int i = 0; i < stmt.liveIn.size(); i++){
     	if(stmt.liveIn.get(i) < 4) {
 	    	if(registerAllotted.containsKey(stmt.liveIn.get(i))){
@@ -483,12 +552,15 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 	    	}
 	    }
       }
-      //TODO : Save all the callee save registers
       n.f1.accept(this);
       n.f2.accept(this);
       System.out.printf("MOVE v0 ");
       n.f3.accept(this);
-      // TODO : Restore Callee save registers.
+      k = 0;
+      for(int toLoad : presentCFG.toStoreAndLoadCalleeSaveRegisters){
+    	  System.out.println("ALOAD " + registers[toLoad] + " SPILLEDARG "+  (presentCFG.maxParamsOnStack + (k++)) );
+      }
+      
       System.out.println("\nEND ");
       n.f4.accept(this);
       return _ret;
@@ -503,13 +575,14 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     */
    public R visit(Call n) {
       R _ret=null;
+      noOfSpillTemps = 0;
       int numberOfParameters = n.f3.size();
       Vector<Node> params = n.f3.nodes;
       StatementNode stmt = presentCFG.blocks.get(presentInstructionNumber);
       for(int i = 0 ; i < stmt.liveOut.size(); i++) {
     	  if(registerAllotted.containsKey(stmt.liveOut.get(i))){
     		  if(registerAllotted.get(stmt.liveOut.get(i)) < 10){
-    			  System.out.println("ASTORE SPILLEDARG " + (spillTemp + i) +" "+ registers[registerAllotted.get(stmt.liveOut.get(i))] + " ");
+    			  System.out.println("ASTORE SPILLEDARG " + (noOfSpillTemps + i) +" "+ registers[registerAllotted.get(stmt.liveOut.get(i))] + " ");
     		  }
     	  }
       }
@@ -560,7 +633,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       for(int i = 0 ; i < stmt.liveOut.size(); i++) {
     	  if(registerAllotted.containsKey(stmt.liveOut.get(i))){
     		  if(registerAllotted.get(stmt.liveOut.get(i)) < 10){
-    			  System.out.println("ALOAD " + registers[registerAllotted.get(stmt.liveOut.get(i))] + " SPILLEDARG " + (spillTemp + i) + " ");
+    			  System.out.println("ALOAD " + registers[registerAllotted.get(stmt.liveOut.get(i))] + " SPILLEDARG " + (noOfSpillTemps + i) + " ");
     		  }
     	  }
       }
@@ -636,6 +709,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       else {
     	  //TODO : Position on the stack as it is being spilled.
     	  System.out.println("SPILLED?" + n.f1.f0.tokenImage);
+    	  System.out.println("Entry Set : " + locationOnStack.entrySet());
       }
       return _ret;
    }

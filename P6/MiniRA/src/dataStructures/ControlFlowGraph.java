@@ -2,6 +2,7 @@ package dataStructures;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Vector;
 
 /**
  * @author Akhilesh Godi (CS10B037)
@@ -12,11 +13,26 @@ public class ControlFlowGraph {
 	public ArrayList<StatementNode> blocks;
 	public HashMap<Integer,Integer> startPoints;
 	public HashMap<Integer, Integer> endPoints;
+	public int itsParamsSize;
+	public int maxParams;
+	public int maxParamsOnStack;
+	public int noOfCalleeSaveRegisters;
+	public int totalNoOfSpilledArgs;
+	public int maxCallerSaveRegisters;
+	public Vector<Integer> toStoreAndLoadCalleeSaveRegisters;
 	public ControlFlowGraph(){
 		blocks = new ArrayList<StatementNode>();
 		startPoints = new HashMap<Integer, Integer>();
 		endPoints = new HashMap<Integer, Integer>();
+		maxParams = 0;
+		itsParamsSize = 0;
+		noOfCalleeSaveRegisters = 0;
+		totalNoOfSpilledArgs = 0;
+		maxCallerSaveRegisters = 0;
+		maxParamsOnStack = 0;
+		toStoreAndLoadCalleeSaveRegisters = new Vector<Integer>();
 	}
+	
 	
 	/**
 	 * @return the blocks

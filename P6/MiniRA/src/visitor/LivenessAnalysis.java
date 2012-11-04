@@ -126,7 +126,6 @@ public class LivenessAnalysis<R> implements GJNoArguVisitor<R> {
 	      System.out.println(s  + " : ");
 	      */
 	      fg = computeLiveness(fg);
-	      //fg = computeStackSize(fg);
 	      fg = computeLiveRanges(fg);
 	      
 	      allCFGs.put(s, fg);
@@ -138,28 +137,7 @@ public class LivenessAnalysis<R> implements GJNoArguVisitor<R> {
    }
 
 
-private ControlFlowGraph computeStackSize(ControlFlowGraph fg) {
-	for(int i = 0; i < fg.blocks.size(); i++){
-		if(fg.blocks.get(i).isContainsCall()){
-			fg.blocks.get(i).callStackSize += fg.blocks.get(i).liveOut.size();
-		}
-	}
-	
-	boolean tmpChange = true;
-	while(tmpChange){
-		tmpChange = false;
-		for(int i = fg.blocks.size() - 1; i >= 0; i--){
-			StatementNode presentStmt = fg.blocks.get(i);
-			for(int j = 0; j < presentStmt.getSuccessors().size(); j++){
-				if(presentStmt.callStackSize < fg.blocks.get(presentStmt.getSuccessors().get(j)).callStackSize){
-					fg.blocks.get(i).callStackSize = fg.blocks.get(presentStmt.getSuccessors().get(j)).callStackSize;
-					tmpChange = true;
-				}
-			}
-		}
-	}
-	return fg;
-}
+
 
 private ControlFlowGraph computeLiveRanges(ControlFlowGraph fg) {
 	// TODO Auto-generated method stub
@@ -335,6 +313,7 @@ private ControlFlowGraph computeLiveRanges(ControlFlowGraph fg) {
       instructionNumber = 0;
       currProc = n.f0.f0.tokenImage;
       labels.put(currProc+ "_" + n.f0.f0.tokenImage, instructionNumber);
+      this.CFG.itsParamsSize = Integer.parseInt(n.f2.f0.tokenImage);
       n.f1.accept(this);
       n.f2.accept(this);
       n.f3.accept(this);
@@ -556,6 +535,7 @@ private ControlFlowGraph computeLiveRanges(ControlFlowGraph fg) {
       int useTempNumber = Integer.parseInt(tmp.f1.f0.tokenImage);
       presentStatement.insertUse(useTempNumber);
       presentStatement.setContainsCall(true);
+      presentStatement.callStackSize = n.f3.size();
       n.f2.accept(this);
       n.f3.accept(this);
       n.f4.accept(this);
