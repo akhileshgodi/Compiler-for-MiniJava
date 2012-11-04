@@ -185,14 +185,20 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
     	  tmpClass = extClass;
     	  classes.add(tmpClass);
       }
-      for(int i = 1; i < classes.size(); i++){
-			for(int j = 0; j < classes.elementAt(i).allVariables.size(); j++){
-				VariableTable v = classes.elementAt(i).allVariables.elementAt(j);
-				currentClass.allVariables.add(v);
-				currentClass.allVariables.elementAt(currentClass.globalOffset).position = currentClass.globalOffset;
+      for(int i = 1; i < classes.size() ; i++){
+    	  int temp = 0;
+    	  for(int j = 0; j < classes.elementAt(i).itsVariables.size(); j++){
+				VariableTable v = classes.elementAt(i).itsVariables.elementAt(j);
+				currentClass.allVariables.add(temp,v);
+				currentClass.allVariables.elementAt(temp).position = currentClass.globalOffset;
 				currentClass.globalOffset++;
+				temp++;
 			}
+    	  //System.out.println(currentClass.allVariables.size() + " ______________ " + currentClass.className);
 		}
+      
+      
+      
       int i, j, k;
 		
 		//add parents' methods to current class and cover the duplicated

@@ -10,12 +10,9 @@ public class Simplify {
          s = (SymbolTable)root.accept(new SymbolTableVisitor()); // Your assignment part is invoked here.
          s = (SymbolTable)root.accept(new GJNoArguDepthFirst(s));
          root.accept(new MiniIRBuilder(s));
-	  }
+      }
       catch (ParseException e) {
          System.out.println(e.toString());
       }
    }
 } 
-
-
-

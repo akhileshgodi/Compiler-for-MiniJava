@@ -1,0 +1,38 @@
+import java.util.ArrayList;
+
+/**
+ * @author Akhilesh Godi (CS10B037)
+ */
+
+public class Block {
+
+	private int blockNumber;
+	private ArrayList<StatementNode> statements;
+	private ArrayList<Integer> successor;
+	
+	public Block(int bno){
+		
+	}
+
+	public int getBlockNumber() {
+		return blockNumber;
+	}
+
+	public void setBlockNumber(int blockNumber) {
+		this.blockNumber = blockNumber;
+	}
+
+	/**
+	 * @return the statements
+	 */
+	public ArrayList<StatementNode> getStatements() {
+		return statements;
+	}
+
+	/**
+	 * @param statements the statements to set
+	 */
+	public void setStatements(ArrayList<StatementNode> statements) {
+		this.statements = statements;
+	}
+}

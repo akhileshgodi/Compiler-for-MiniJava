@@ -1,0 +1,144 @@
+/**
+ * akhilesh
+ * Nov 1, 2012
+ */
+package otherDS;
+
+import java.util.ArrayList;
+
+public class FlowGraph {
+	public ArrayList<Block> blocks;
+	public boolean isChanged;  //mark whether a block's LIVEin and LIVEout are changed
+
+	public FlowGraph(){
+		blocks = new ArrayList<Block>();
+		isChanged = true;
+	}
+
+	public void addBlock(Block block){
+		blocks.add(block);
+	}
+	
+	public int size(){
+		return blocks.size();
+	}
+	
+	public Block getBlock(int blockNumber){
+		return blocks.get(blockNumber);
+	}
+	
+	public void calculateAll()	{
+		int i, j;
+		
+		for(i = 0; i < blocks.size(); i++)
+			blocks.get(i).GenAndKill();
+		
+		while(isChanged){
+			isChanged = false;
+			for(i = blocks.size() - 1; i >= 0; i--){
+				Block currentBlock = blocks.get(i);
+				
+				//calculate blocks' LIVEout
+				for(j = 0; j < currentBlock.succ.size(); j++){
+					mergeTo(blocks.get(currentBlock.succ.get(j)).LIVEin, currentBlock.LIVEout);
+				}
+				
+				//calculate blocks' LIVEin
+				ArrayList<Integer> a = new ArrayList<Integer>();
+				subTwoList(currentBlock.LIVEout, currentBlock.KILL, a);
+				mergeTwoList(currentBlock.GEN, a, currentBlock.LIVEin);
+			}
+		}
+		
+		for(i = 0; i < blocks.size(); i++){
+			blocks.get(i).INandUSE();
+			if(blocks.get(i).endsWithCall){
+				blocks.get(i).callStackSize += blocks.get(i).LIVEout.size();
+			}
+		}
+		
+		boolean change = true;
+		while(change){
+			change = false;
+			for(i = blocks.size() - 1; i >= 0; i--){
+				Block currentBlock = blocks.get(i);
+				for(j = 0; j < currentBlock.succ.size(); j++){
+					if(currentBlock.callStackSize < blocks.get(currentBlock.succ.get(j)).callStackSize){
+						currentBlock.callStackSize = blocks.get(currentBlock.succ.get(j)).callStackSize;
+						change = true;
+					}
+				}
+			}
+		}
+	}
+	
+	public void mergeTo(ArrayList<Integer> source, ArrayList<Integer> dest){
+		for(int i = 0; i < source.size(); i++){
+			if(!dest.contains(source.get(i))){
+				isChanged = true;
+				dest.add(source.get(i));
+			}
+		}
+	}
+	
+	public void mergeTwoList(ArrayList<Integer> a1, ArrayList<Integer> a2, ArrayList<Integer> dest){
+		int i;
+		for(i = 0; i < a1.size(); i++){
+			if(!dest.contains(a1.get(i))){
+				isChanged = true;
+				dest.add(a1.get(i));
+			}
+		}
+		for(i = 0; i < a2.size(); i++){
+			if(!dest.contains(a2.get(i))){
+				isChanged = true;
+				dest.add(a2.get(i));
+			}
+		}
+	}
+	
+	public void subTwoList(ArrayList<Integer> a1, ArrayList<Integer> a2, ArrayList<Integer> dest){
+		for(int i = 0; i < a1.size(); i++){
+			if(!a2.contains(a1.get(i))){
+				dest.add(a1.get(i));
+			}
+		}
+	}
+	
+	
+	//just use for debug
+	public void printGraph(){
+		int i, j;
+		for(i = 0; i < blocks.size(); i++){
+			System.out.print("\n\nBlock " + i + ":\n");
+			for(j = 0; j < blocks.get(i).nodes.size(); j++){
+				String type = null;
+				switch(blocks.get(i).nodes.get(j).type){
+				case 0:type = "NOOP";break;
+				case 1:type = "ERROR";break;
+				case 2:type = "CJUMP";break;
+				case 3:type = "JUMP";break;
+				case 4:type = "HSTORE";break;
+				case 5:type = "HLOAD";break;
+				case 6:type = "MOVE";break;
+				case 7:type = "PRINT";break;
+				case 8:type = "RETURN";break;
+				default:System.out.println("flow graph instruction type error");break;
+				}
+				System.out.print(type + " def");
+				System.out.print(blocks.get(i).nodes.get(j).DEF + " use");
+				System.out.print(blocks.get(i).nodes.get(j).USE + " in");
+				System.out.print(blocks.get(i).nodes.get(j).IN + " out");
+				System.out.print(blocks.get(i).nodes.get(j).OUT + "\n");
+			}
+			System.out.println("\nsucc" + blocks.get(i).succ);
+			System.out.println("GEN" + blocks.get(i).GEN);
+			System.out.println("KILL" + blocks.get(i).KILL);
+			System.out.println("LIVEin" + blocks.get(i).LIVEin);
+			System.out.println("LIVEout" + blocks.get(i).LIVEout);
+			System.out.println("ens with call " + blocks.get(i).endsWithCall + 
+					"\nstack size " + blocks.get(i).callStackSize);
+		}
+	}
+	
+}

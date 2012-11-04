@@ -36,6 +36,7 @@ class ClassTable implements SymbolTable{
 	Hashtable<String, FunctionTable> functions = new Hashtable<String,FunctionTable>();
 	Vector<VariableTable> allVariables = new Vector<VariableTable>();
 	Vector<FunctionTable> allFunctions = new Vector<FunctionTable>();
+	Vector<VariableTable> itsVariables = new Vector<VariableTable>();
 	SymbolTable previousPointer;	//Pointer to the previous table (stack?)
 	String extendsClassName;
 	

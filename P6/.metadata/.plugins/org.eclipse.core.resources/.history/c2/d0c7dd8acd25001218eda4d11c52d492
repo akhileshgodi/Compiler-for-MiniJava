@@ -1,0 +1,123 @@
+/**
+ * akhilesh
+ * Nov 1, 2012
+ */
+package otherDS;
+
+import java.util.ArrayList;
+
+public class Block {
+	public ArrayList<GraphNode> nodes;
+	public int blockNumber;
+	public ArrayList<Integer> succ;
+	public ArrayList<Integer> GEN;
+	public ArrayList<Integer> KILL;
+	public ArrayList<Integer> LIVEin;
+	public ArrayList<Integer> LIVEout;
+	
+	public int callStackSize;
+	public boolean endsWithCall;
+	
+	public Block(int n){
+		blockNumber = n;
+		nodes = new ArrayList<GraphNode>();
+		succ = new ArrayList<Integer>();
+		GEN = new ArrayList<Integer>();
+		KILL = new ArrayList<Integer>();
+		LIVEin = new ArrayList<Integer>();
+		LIVEout = new ArrayList<Integer>();
+		callStackSize = 0;
+		endsWithCall = false;
+	}
+
+	public void addNode(GraphNode node){
+		nodes.add(node);
+	}
+	
+	public void addSucc(Integer b){
+		succ.add(b);
+	}
+	
+	public void GenAndKill(){
+		int i, j, k;
+		int def, use;
+		boolean flag = true;
+		// nodes.size() = 1 in this case i = 0
+		for(i = 0; i < nodes.size(); i++){
+			//calculate DEF
+			// j < present nodes definition size
+			for(j = 0; j < nodes.get(i).DEF.size(); j++){
+				def = nodes.get(i).DEF.get(j);
+				flag = true;
+				for(k = 0; k < i; k++){
+					if(nodes.get(k).USE.contains(def)){
+						flag = false;
+						break;
+					}
+				}
+				if(flag && !KILL.contains(def)) KILL.add(def);
+			}
+			
+			//calculate USE
+			for(j = 0; j < nodes.get(i).USE.size(); j++){
+				use = nodes.get(i).USE.get(j);
+				flag = true;
+				for(k = 0; k < i; k++){
+					if(nodes.get(k).DEF.contains(use)){
+						flag = false;
+						break;
+					}
+				}
+				if(flag && !GEN.contains(use)) GEN.add(use);
+			}
+		}
+	}
+	
+	public void INandUSE(){
+		//calculate current node's LIVEin and LIVEout
+		if(nodes.size() > 0){
+			int last = nodes.size() - 1;
+			mergeTo(LIVEout, nodes.get(last).OUT);
+			ArrayList<Integer> temp = new ArrayList<Integer>();
+			subTwoList(nodes.get(last).OUT, nodes.get(last).DEF, temp);
+			mergeTwoList(nodes.get(last).USE, temp, nodes.get(last).IN);
+			
+			for(int j = nodes.size() - 2; j >= 0; j--){
+				ArrayList<Integer> tmp = new ArrayList<Integer>();
+				mergeTo(nodes.get(j + 1).IN, nodes.get(j).OUT);
+				subTwoList(nodes.get(j).OUT, nodes.get(j).DEF, tmp);
+				mergeTwoList(nodes.get(j).USE, tmp, nodes.get(j).IN);
+			}
+		}
+	}
+	
+	public void mergeTo(ArrayList<Integer> source, ArrayList<Integer> dest){
+		for(int i = 0; i < source.size(); i++){
+			if(!dest.contains(source.get(i))){
+				dest.add(source.get(i));
+			}
+		}
+	}
+	
+	public void mergeTwoList(ArrayList<Integer> a1, ArrayList<Integer> a2, ArrayList<Integer> dest){
+		int i;
+		for(i = 0; i < a1.size(); i++){
+			if(!dest.contains(a1.get(i))){
+				dest.add(a1.get(i));
+			}
+		}
+		for(i = 0; i < a2.size(); i++){
+			if(!dest.contains(a2.get(i))){
+				dest.add(a2.get(i));
+			}
+		}
+	}
+	
+	public void subTwoList(ArrayList<Integer> a1, ArrayList<Integer> a2, ArrayList<Integer> dest){
+		for(int i = 0; i < a1.size(); i++){
+			if(!a2.contains(a1.get(i))){
+				dest.add(a1.get(i));
+			}
+		}
+	}
+}

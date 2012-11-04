@@ -360,14 +360,15 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
       VariableTable v = (VariableTable)f.findVariables(n.f0.f0.tokenImage);
       if(v!=null){
 	      if(f.parameters.containsKey(n.f0.f0.tokenImage)){
-	    	  System.out.println("MOVE TEMP " + (1+v.position) + " ");
+	    	  System.out.print("MOVE TEMP " + (1+v.position) + " ");
 	      }
 	      else if(f.localVars.containsKey(n.f0.f0.tokenImage)){
-	    	  System.out.println("MOVE TEMP "+ v.position + " ");
+	    	  System.out.print("MOVE TEMP "+ v.position + " ");
 	      }
-	      else
+	      else{
 	    	  System.out.println("HSTORE TEMP 0 "+(1+currentClass.allVariables.indexOf(v))*4 + " ");
-      }
+	      }
+	  }
       else{
     	  //TODO : Check if this works
     	  ClassTable tmpClass = currentClass;
@@ -653,7 +654,7 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
 	  String arrayName = typeOfReturn;
 	  VariableTable v = (VariableTable)current.findVariables(arrayName);
 	  System.out.println("BEGIN HLOAD TEMP " + temp4 + " ");
-	  System.out.println("PLUS BEGIN ");
+	  System.out.printf("PLUS\n BEGIN ");
 		
 	  if(current instanceof FunctionTable){
 		  if(((FunctionTable) current).localVars.containsKey(arrayName) ){
@@ -707,7 +708,7 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
 	   R _ret=null;
       int temp1 = temp++;
       int temp2 = temp++;
-      System.out.println("BEGIN MOVE TEMP "+temp1 + " ");
+      System.out.print("BEGIN MOVE TEMP "+temp1 + " ");
       
       n.f0.accept(this);
 	  System.out.println("HLOAD TEMP " + temp2 + " TEMP " + temp1 + " 0 ");
@@ -899,7 +900,7 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
 		    	  System.out.print("TEMP " + (1+v.position) + " ");
 		      }
 	    	  else if(f.localVars.containsKey(n.f0.tokenImage)) {
-	    		  System.out.println("TEMP "+v.position + " ");
+	    		  System.out.print("TEMP "+v.position + " ");
 	    	  }
 	    	  else{
 	              v = (VariableTable) current.findVariables(n.f0.tokenImage);
@@ -941,7 +942,7 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
 	          if(v!=null){
 	        	  int temp1 = temp++;
 	              System.out.println("BEGIN HLOAD TEMP " + temp1 + " TEMP 0 " + (1 +currentClass.allVariables.indexOf(v))*4 + " ");
-		          System.out.println("RETURN TEMP " + temp1 + " END ");
+		          System.out.printf("RETURN TEMP " + temp1 + " END ");
 	          }
 	      }
 	    
@@ -997,7 +998,7 @@ public class MiniIRBuilder<R> implements GJNoArguVisitor<R> {
       int label1 = label++;
       int label2 = label++;
       
-      System.out.println(" BEGIN MOVE TEMP "+ temp1 + " ");
+      System.out.printf(" BEGIN MOVE TEMP "+ temp1 + " ");
       n.f0.accept(this);
       n.f1.accept(this);
       n.f2.accept(this);

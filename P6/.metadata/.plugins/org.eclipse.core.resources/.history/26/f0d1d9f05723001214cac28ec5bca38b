@@ -1,0 +1,12 @@
+import java.util.ArrayList;
+
+
+/**
+ * @author akhilesh
+ *
+ */
+public class ControlFlowGraph {
+
+	private ArrayList<StatementNode> blocks;
+	
+}

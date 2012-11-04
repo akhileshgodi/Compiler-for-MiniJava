@@ -1,0 +1,222 @@
+package dataStructures;
+
+
+import java.util.ArrayList;
+
+
+public class StatementNode {
+
+	private int type;					// Stores type of statement in an enumerated form
+	private int instructionNumber;
+	private String statementType;		// Stores the type of the statement in a string form
+	private ArrayList<Integer> use;		// Stores the temporary numbers 
+	private ArrayList<Integer> def;		// Stores the temporary numbers
+	private ArrayList<Integer> successors;
+	private ArrayList<Integer> liveIn;
+	private ArrayList<Integer> liveOut;
+	private boolean containsCall;
+	private boolean todo;
+	private String labelToFill;
+	public StatementNode(String stmtType , int instrNum){
+		this.statementType = stmtType;
+		this.setTodo(false);
+		this.setLabelToFill("");
+		// TODO : Make this switch case!
+		if(stmtType.equals("NOOP")) {
+			setType(0);
+			this.insertSuccessor(instrNum+1);
+		}
+		else if(stmtType.equals("ERROR")) {
+			setType(1);
+			this.insertSuccessor(instrNum+1);
+		}
+		else if(stmtType.equals("CJUMP")) setType(2);
+		else if(stmtType.equals("JUMP")) setType(3);
+		else if(stmtType.equals("HSTORE")) {
+			setType(4);
+			this.insertSuccessor(instrNum+1);
+		}
+		else if(stmtType.equals("HLOAD")) {
+			setType(5);
+			this.insertSuccessor(instrNum+1);
+		}
+		else if(stmtType.equals("MOVE")) {
+			setType(6);
+			this.insertSuccessor(instrNum+1);
+		}
+		else if(stmtType.equals("PRINT")) {
+			setType(7);
+			this.insertSuccessor(instrNum+1);
+		}
+		else if(stmtType.equals("RETURN")) {
+			setType(8);
+			this.insertSuccessor(instrNum+1);
+		}
+		else {
+			setType(-1);
+			this.statementType = "PROCEDURE";
+		}
+		
+		this.use = new ArrayList<Integer>();
+		this.def = new ArrayList<Integer>();
+		this.successors = new ArrayList<Integer>();
+		this.instructionNumber = instrNum;
+		this.setLiveIn(new ArrayList<Integer>());
+		this.setLiveOut(new ArrayList<Integer>());
+	}
+	
+	public int getType() {
+		return type;
+	}
+	
+	public void setType(int type) {
+		this.type = type;
+	}
+	
+	public String getStatementType() {
+		return statementType;
+	}
+	
+	public void setStatementType(String statementType) {
+		this.statementType = statementType;
+	}
+	
+	public ArrayList<Integer> getUse() {
+		return use;
+	}
+	
+	public void setUse(ArrayList<Integer> use) {
+		this.use = use;
+	}
+	public ArrayList<Integer> getDef() {
+		return def;
+	}
+	public void setDef(ArrayList<Integer> def) {
+		this.def = def;
+	}
+
+
+	/**
+	 * @return the successors
+	 */
+	public ArrayList<Integer> getSuccessors() {
+		return successors;
+	}
+
+	/**
+	 * @param successors the successors to set
+	 */
+	public void setSuccessors(ArrayList<Integer> successors) {
+		this.successors = successors;
+	}
+
+	/**
+	 * @return the instructionNumber
+	 */
+	public int getInstructionNumber() {
+		return instructionNumber;
+	}
+
+	/**
+	 * @param instructionNumber the instructionNumber to set
+	 */
+	public void setInstructionNumber(int instructionNumber) {
+		this.instructionNumber = instructionNumber;
+	}
+
+	/**
+	 * @return the liveIn
+	 */
+	public ArrayList<Integer> getLiveIn() {
+		return liveIn;
+	}
+
+	/**
+	 * @param liveIn the liveIn to set
+	 */
+	public void setLiveIn(ArrayList<Integer> liveIn) {
+		this.liveIn = liveIn;
+	}
+
+	/**
+	 * @return the liveOut
+	 */
+	public ArrayList<Integer> getLiveOut() {
+		return liveOut;
+	}
+
+	/**
+	 * @param liveOut the liveOut to set
+	 */
+	public void setLiveOut(ArrayList<Integer> liveOut) {
+		this.liveOut = liveOut;
+	}
+/*-------------------------------------------------------------*/
+	/**
+	 * @param parseInt
+	 */
+	public void insertUse(int tempNumber) {
+		// TODO Auto-generated method stub
+		if(this.type > 3 && !(this.use.contains(tempNumber))){
+			this.use.add(tempNumber);
+		}
+	}
+	
+	public void insertDef(int tempNumber) {
+		// TODO Auto-generated method stub
+		if(this.type > 3 && !(this.use.contains(tempNumber))){
+			this.use.add(tempNumber);
+		}
+	}
+
+/**
+	 * @param instructionNumber
+	 */
+	public void insertSuccessor(int instructionNumber) {
+		// TODO Auto-generated method stub
+		this.successors.add(instructionNumber);
+	}
+
+/**
+ * @return the containsCall
+ */
+public boolean isContainsCall() {
+	return containsCall;
+}
+
+/**
+ * @param containsCall the containsCall to set
+ */
+public void setContainsCall(boolean containsCall) {
+	this.containsCall = containsCall;
+}
+
+/**
+ * @return the todo
+ */
+public boolean getTodo() {
+	return todo;
+}
+
+/**
+ * @param todo the todo to set
+ */
+public void setTodo(boolean todo) {
+	this.todo = todo;
+}
+
+/**
+ * @return the labelToFill
+ */
+public String getLabelToFill() {
+	return labelToFill;
+}
+
+/**
+ * @param labelToFill the labelToFill to set
+ */
+public void setLabelToFill(String labelToFill) {
+	this.labelToFill = labelToFill;
+}
+
+}

@@ -1,0 +1,46 @@
+package LivenessAnalysis;
+
+import java.util.ArrayList;
+
+
+public class GraphNode {
+	public int type;
+	public ArrayList<Integer> USE;
+	public ArrayList<Integer> DEF;
+	public ArrayList<Integer> IN;
+	public ArrayList<Integer> OUT;
+	//public ArrayList<Integer> toEdges;
+	//public Vector<Integer> fromEdges;
+	
+	public GraphNode(int t){
+		type = t;
+		USE = new ArrayList<Integer>();
+		DEF = new ArrayList<Integer>();
+		IN = new ArrayList<Integer>();
+		OUT = new ArrayList<Integer>();
+		/*
+		0 => NOOP
+		1 => ERROR
+		2 => CJUMP
+		3 => JUMP
+		4 => HSTORE
+		5 => HLOAD
+		6 => MOVE
+		7 => PRINT
+		8 => RETURN
+		*/
+	}
+	
+	public void addUSE(int n){
+		if(n >= 4 && !USE.contains(n)){
+			USE.add(n);
+		}
+	}
+	
+	public void addDEF(int n){
+		if(n >= 4 && !USE.contains(n)){
+			DEF.add(n);
+		}
+	}
+	
+}

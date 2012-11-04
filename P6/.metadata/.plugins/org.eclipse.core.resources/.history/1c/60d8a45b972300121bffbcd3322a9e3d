@@ -1,0 +1,369 @@
+package visitor;
+import syntaxtree.*;
+
+import java.util.*;
+import otherDS.*;
+
+public class AnalysisVisitor implements GJVisitor<Node, Object>{
+	public FlowGraph flowGraph;
+	Block currentBlock;
+	GraphNode currentNode;
+	public HashMap<String, Integer> labelList;
+	int blockSerial;
+	int callMethodSerial;
+	
+	public AnalysisVisitor (){
+		flowGraph = new FlowGraph();
+		labelList = new HashMap<String, Integer>();
+		blockSerial = 0;
+		callMethodSerial = 0;
+		currentBlock = null;
+		currentNode = null;
+	}
+	
+	//(A)+
+	public Node visit(NodeList node, Object argu){
+		for(int i = 0; i < node.size(); i++)
+			node.elementAt(i).accept(this, node);
+		return node;
+	}
+	
+	//(A)*
+	public Node visit(NodeListOptional node, Object argu){
+		for(int i = 0; i < node.size(); i++)
+			node.nodes.elementAt(i).accept(this, node);
+		return node;
+	}
+	
+	//(A)?
+	public Node visit(NodeOptional node, Object argu){
+		if(node.node != null){
+			int num = labelList.get(((Label)node.node).f0.tokenImage);
+			currentBlock.addSucc(num);
+			currentBlock = flowGraph.getBlock(num);
+		}
+		return node;
+	}
+	
+	
+	//Represents a sequence of nodes nested within a choice, list,
+	//optional list, or optional, e.g. ( A B )+ or [ C D E ]
+	public Node visit(NodeSequence node, Object argu){
+		for(int i = 0; i < node.size(); i++)
+			node.elementAt(i).accept(this, node);
+		return node;
+	}
+	
+	//should never be visited
+	public Node visit(NodeToken node, Object argu){
+		System.out.println("??error " + node.tokenImage);
+		return node;
+	}
+
+	//
+	// User-generated visitor methods below
+	//
+
+	/**
+	 * f0 -> "MAIN"
+	 * f1 -> StmtList()
+	 * f2 -> "END"
+	 * f3 -> ( Procedure() )*
+	 * f4 -> <EOF>
+	 */
+	public Node visit(Goal node, Object argu){
+		Block block = new Block(blockSerial++);
+		labelList.put("MAIN", block.blockNumber);
+		flowGraph.addBlock(block);
+		currentBlock = flowGraph.getBlock(block.blockNumber);
+		Block iterBlock;
+		String iterName;
+		for(int i = 0; i < node.f3.size(); i++){
+			iterName = ((Procedure)node.f3.nodes.elementAt(i)).f0.f0.tokenImage;
+			iterBlock = new Block(blockSerial++);
+			labelList.put(iterName, iterBlock.blockNumber);
+			flowGraph.addBlock(iterBlock);
+		}
+		node.f1.accept(this, node);
+		node.f3.accept(this, node);
+		flowGraph.printGraph();
+		return node;
+	}
+
+	/**
+	 * f0 -> ( ( Label() )? Stmt() )*
+	 */
+	public Node visit(StmtList node, Object argu){
+		NodeListOptional nodeList = node.f0;
+		NodeSequence ns;
+		for(int i = 0; i < nodeList.size(); i++){
+			ns = (NodeSequence)nodeList.elementAt(i);
+			NodeOptional no = (NodeOptional)ns.nodes.get(0);
+			if(no.node instanceof Label){
+				Block block = new Block(blockSerial++);
+				labelList.put(((Label)no.node).f0.tokenImage, block.blockNumber);
+				flowGraph.addBlock(block);
+			}
+		}
+		node.f0.accept(this, node);
+		return node;
+	}
+
+	/**
+	 * f0 -> Label()
+	 * f1 -> "["
+	 * f2 -> IntegerLiteral()
+	 * f3 -> "]"
+	 * f4 -> StmtExp()
+	 */
+	public Node visit(Procedure node, Object argu){
+		int num = labelList.get(node.f0.f0.tokenImage);
+		currentBlock = flowGraph.getBlock(num);
+		node.f4.accept(this, node);
+		return node;
+	}
+
+	/**
+	 * f0 -> NoOpStmt()
+	 *       | ErrorStmt()
+	 *       | CJumpStmt()
+	 *       | JumpStmt()
+	 *       | HStoreStmt()
+	 *       | HLoadStmt()
+	 *       | MoveStmt()
+	 *       | PrintStmt()
+	 */
+	public Node visit(Stmt node, Object argu){
+		node.f0.accept(this, node);
+		return node;
+	}
+
+	/**
+	 * f0 -> "NOOP"
+	 */
+	public Node visit(NoOpStmt node, Object argu){
+		GraphNode n = new GraphNode(0);
+		currentBlock.addNode(n);
+		return node;
+	}
+
+	/**
+	 * f0 -> "ERROR"
+	 */
+	public Node visit(ErrorStmt node, Object argu){
+		GraphNode n = new GraphNode(1);
+		currentBlock.addNode(n);
+		return node;
+	}
+
+	/**
+	 * f0 -> "CJUMP"
+	 * f1 -> Exp()
+	 * f2 -> Label()
+	 */
+	public Node visit(CJumpStmt node, Object argu){
+		GraphNode n = new GraphNode(2);
+		n.addUSE(Integer.parseInt(node.f1.f1.f0.tokenImage));
+		currentBlock.addNode(n);
+		int num = labelList.get(node.f2.f0.tokenImage);
+		currentBlock.addSucc(num);
+		Block block = new Block(blockSerial++);
+		flowGraph.addBlock(block);
+		currentBlock.addSucc(block.blockNumber);
+		currentBlock = block;
+		return node;
+	}
+
+	/**
+	 * f0 -> "JUMP"
+	 * f1 -> Label()
+	 */
+	public Node visit(JumpStmt node, Object argu){
+		GraphNode n = new GraphNode(3);
+		currentBlock.addNode(n);
+		int num = labelList.get(node.f1.f0.tokenImage);
+		currentBlock.addSucc(num);
+		Block block = new Block(blockSerial++);
+		flowGraph.addBlock(block);
+		currentBlock = block;
+		return node;
+	}
+
+	/**
+	 * f0 -> "HSTORE"
+	 * f1 -> Exp()
+	 * f2 -> IntegerLiteral()
+	 * f3 -> Exp()
+	 */
+	public Node visit(HStoreStmt node, Object argu){
+		GraphNode n = new GraphNode(4);
+		n.addUSE(Integer.parseInt(node.f1.f1.f0.tokenImage));
+		n.addUSE(Integer.parseInt(node.f3.f1.f0.tokenImage));
+		currentBlock.addNode(n);
+		return node;
+	}
+
+	/**
+	 * f0 -> "HLOAD"
+	 * f1 -> Temp()
+	 * f2 -> Exp()
+	 * f3 -> IntegerLiteral()
+	 */
+	public Node visit(HLoadStmt node, Object argu){
+		GraphNode n = new GraphNode(5);
+		n.addDEF(Integer.parseInt(node.f1.f1.f0.tokenImage));
+		n.addUSE(Integer.parseInt(node.f2.f1.f0.tokenImage));
+		currentBlock.addNode(n);
+		return node;
+	}
+
+	/**
+	 * f0 -> "MOVE"
+	 * f1 -> Temp()
+	 * f2 -> Exp()
+	 */
+	public Node visit(MoveStmt node, Object argu){
+		GraphNode n = new GraphNode(6);
+		n.addDEF(Integer.parseInt(node.f1.f1.f0.tokenImage));
+		currentBlock.addNode(n);
+		currentNode = n;
+		node.f2.accept(this, node);
+		return node;
+	}
+
+	/**
+	 * f0 -> "PRINT"
+	 * f1 -> Exp()
+	 */
+	public Node visit(PrintStmt node, Object argu){
+		if(node.f1.f0.choice instanceof Temp){
+			GraphNode n = new GraphNode(7);
+			n.addUSE(Integer.parseInt(((Temp)node.f1.f0.choice).f1.f0.tokenImage));
+			currentBlock.addNode(n);
+		}
+		return node;
+	}
+
+	/**
+	 * f0 -> StmtExp()
+	 *       | Call()
+	 *       | HAllocate()
+	 *       | BinOp()
+	 *       | Temp()
+	 *       | IntegerLiteral()
+	 *       | Label()
+	 */
+	public Node visit(Exp node, Object argu){
+		node.f0.accept(this, node);
+		return node;
+	}
+
+	/**
+	 * f0 -> "BEGIN"
+	 * f1 -> StmtList()
+	 * f2 -> "RETURN"
+	 * f3 -> Exp()
+	 * f4 -> "END"
+	 */
+	public Node visit(StmtExp node, Object argu){
+		node.f1.accept(this, node);
+		
+		GraphNode n = new GraphNode(8);
+		currentBlock.addNode(n);
+		currentNode = n;
+		node.f3.accept(this, node);
+		return node;
+	}
+
+	/**
+	 * f0 -> "CALL"
+	 * f1 -> Exp()
+	 * f2 -> "("
+	 * f3 -> ( Exp() )*
+	 * f4 -> ")"
+	 */
+	public Node visit(Call node, Object argu){
+		Temp temp = (Temp)node.f1.f0.choice;
+		currentNode.addUSE(Integer.parseInt(temp.f1.f0.tokenImage));
+		node.f3.accept(this, node);
+		
+		Block block = new Block(blockSerial++);
+		flowGraph.addBlock(block);
+		currentBlock.addSucc(block.blockNumber);
+		currentBlock.endsWithCall = true;
+		currentBlock = block;
+/*
+		int num = labelList.get(Serial.callMethods.get(callMethodSerial++));
+		currentBlock.addSucc(num);
+		Block block = new Block(blockSerial++);
+		flowGraph.addBlock(block);
+		flowGraph.getBlock(num).addSucc(block.blockNumber);
+		//currentBlock.addSucc(block.blockNumber);
+		currentBlock = block;*/
+		
+		return node;
+	}
+
+	/**
+	 * f0 -> "HALLOCATE"
+	 * f1 -> Exp()
+	 */
+	public Node visit(HAllocate node, Object argu){
+		node.f1.accept(this, node);
+		return node;
+	}
+
+	/**
+	 * f0 -> Operator()
+	 * f1 -> Exp()
+	 * f2 -> Exp()
+	 */
+	public Node visit(BinOp node, Object argu){
+		node.f1.accept(this, node);
+		node.f2.accept(this, node);
+		return node;
+	}
+
+	/**
+	 * f0 -> "LT"
+	 *       | "PLUS"
+	 *       | "MINUS"
+	 *       | "TIMES"
+	 */
+	public Node visit(Operator node, Object argu){
+		return node;
+	}
+
+	/**
+	 * f0 -> "TEMP"
+	 * f1 -> IntegerLiteral()
+	 */
+	public Node visit(Temp node, Object argu){
+		currentNode.addUSE(Integer.parseInt(node.f1.f0.tokenImage));
+		return node;
+	}
+
+	/**
+	 * f0 -> <INTEGER_LITERAL>
+	 */
+	public Node visit(IntegerLiteral node, Object argu){
+		return node;
+	}
+
+	/**
+	 * f0 -> <IDENTIFIER>
+	 */
+	public Node visit(Label node, Object argu){
+		return node;
+	}
+
+	/* (non-Javadoc)
+	 * @see visitor.GJVisitor#visit(syntaxtree.SimpleExp, java.lang.Object)
+	 */
+	@Override
+	public Node visit(SimpleExp n, Object argu) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

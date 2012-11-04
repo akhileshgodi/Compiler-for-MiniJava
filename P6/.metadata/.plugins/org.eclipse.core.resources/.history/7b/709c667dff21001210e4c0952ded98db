@@ -1,0 +1,16 @@
+import java.util.ArrayList;
+
+/**
+ * @author Akhilesh Godi (CS10B037)
+ */
+
+public class Block {
+
+	private int blockNumber;
+	private ArrayList<StatementNode> statements;
+	private ArrayList<Integer> successor;
+	
+	public Block(){
+		
+	}
+}

@@ -1,0 +1,47 @@
+MAIN [ 0 ] [ 25 ] [ 25 ]
+MOVE t0 HALLOCATE 4 
+MOVE t1 t0 
+MOVE t0 HALLOCATE 8 
+MOVE t2 t0 
+MOVE t0 Test_start
+HSTORE t1 0 t0 
+HSTORE t2 0 t1 
+MOVE t0 0 
+HSTORE t2 4 t0 
+MOVE t0 t2 
+HLOAD t1 t0 0 
+HLOAD t2 t1 0 
+ASTORE SPILLEDARG 0 t1 
+MOVE a0 t0
+CALL t2 
+ALOAD t1 SPILLEDARG 0 
+MOVE t1 v0 
+PRINT t1 
+END 
+Test_start [ 1 ] [ 25 ] [ 25 ]
+MOVE t0 a0
+MOVE t1 10 
+MOVE t2 PLUS t1 1 
+MOVE t3 TIMES t2 4 
+MOVE t2 HALLOCATE t3 
+MOVE t3 t2 
+MOVE t2 4 
+Test_start_L0 NOOP 
+MOVE t4 PLUS t1 1 
+MOVE t5 TIMES t4 4 
+MOVE t4 LT t2 t5 
+CJUMP t4 Test_start_L1 
+MOVE t4 PLUS t3 t2 
+MOVE t5 0 
+HSTORE t4 0 t5 
+MOVE t4 PLUS t2 4 
+MOVE t2 t4 
+JUMP Test_start_L0 
+Test_start_L1 NOOP 
+HSTORE t3 0 t1 
+HSTORE t0 4 t3 
+HLOAD t1 t0 4 
+MOVE t0 t1 
+HLOAD t1 t0 0 
+MOVE v0 t1 
+END 

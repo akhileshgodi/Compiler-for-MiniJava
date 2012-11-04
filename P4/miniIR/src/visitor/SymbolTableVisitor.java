@@ -259,7 +259,9 @@ public class SymbolTableVisitor<R> implements GJNoArguVisitor<R> {
     	  if(((ClassTable)currentClass).variables.get(n.f1.f0.tokenImage) == null){
     		  ((ClassTable) currentClass).variables.put(n.f1.f0.tokenImage,_variable);
     		  ((ClassTable) currentClass).allVariables.add(_variable);
-    		}
+    		  ((ClassTable) currentClass).itsVariables.add(_variable);
+      		
+    	  }
     	  else {
     		  //System.err.print("Variable redefined");
 	    	  System.out.print("Type error");
@@ -337,6 +339,7 @@ public class SymbolTableVisitor<R> implements GJNoArguVisitor<R> {
       n.f10.accept(this);
       n.f11.accept(this);
       n.f12.accept(this);
+      
       return (R) _function;
 	}
 

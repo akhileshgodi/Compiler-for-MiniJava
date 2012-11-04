@@ -1,0 +1,28 @@
+import java.util.ArrayList;
+
+/**
+ * @author Akhilesh Godi (CS10B037)
+ *
+ */
+public class ControlFlowGraph {
+
+	private ArrayList<StatementNode> blocks;
+	
+	public ControlFlowGraph()P
+	
+	
+	/**
+	 * @return the blocks
+	 */
+	public ArrayList<StatementNode> getBlocks() {
+		return blocks;
+	}
+
+	/**
+	 * @param blocks the blocks to set
+	 */
+	public void setBlocks(ArrayList<StatementNode> blocks) {
+		this.blocks = blocks;
+	}
+	
+}

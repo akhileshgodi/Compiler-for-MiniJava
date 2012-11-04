@@ -1,0 +1,48 @@
+import java.util.ArrayList;
+
+/**
+ * @author Akhilesh Godi (CS10B037)
+ */
+
+public class Block {
+
+	private int blockNumber;
+	private ArrayList<StatementNode> statements;
+	private ArrayList<Integer> successor;
+	
+	public Block(int bno){
+		setBlockNumber(bno);
+		statements = new ArrayList<StatementNode>();
+		successor = new ArrayList<Integer>();
+	}
+
+	public int getBlockNumber() {
+		return blockNumber;
+	}
+
+	public void setBlockNumber(int blockNumber) {
+		this.blockNumber = blockNumber;
+	}
+
+	public ArrayList<StatementNode> getStatements() {
+		return statements;
+	}
+
+	public void setStatements(ArrayList<StatementNode> statements) {
+		this.statements = statements;
+	}
+
+	/**
+	 * @return the successor
+	 */
+	public ArrayList<Integer> getSuccessor() {
+		return successor;
+	}
+
+	/**
+	 * @param successor the successor to set
+	 */
+	public void setSuccessor(ArrayList<Integer> successor) {
+		this.successor = successor;
+	}
+}
