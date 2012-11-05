@@ -448,18 +448,18 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 	        	  Temp tmp = (Temp)nPrime.f1.f0.choice;
 	        	  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
 	        	  if(registerAllotted.containsKey(tempNo)){
-	        		  System.out.printf("MOVE "+ registers[registerAllotted.get(temp0)] + "HALLOCATE " + registers[registerAllotted.get(tempNo)]);
+	        		  System.out.printf("MOVE "+ registers[registerAllotted.get(temp0)] + " HALLOCATE " + registers[registerAllotted.get(tempNo)]);
 	        	  }
 	        	  else {
 	        		  int paramsOnStack = presentCFG.itsParamsSize - 4;
 	        		  if(paramsOnStack < 0) paramsOnStack = 0;
 	        		  System.out.printf("ALOAD v1 SPILLEDARG " + (paramsOnStack+presentCFG.noOfCalleeSaveRegisters+locationOnStack.get(tempNo)));
-	        		  System.out.println("MOVE " + registers[registerAllotted.get(temp0)] + "HALLOCATE v1 ");
+	        		  System.out.println("MOVE " + registers[registerAllotted.get(temp0)] + " HALLOCATE v1 ");
 	        	  }
 	          }
 	          else {
-	    	      System.out.printf("MOVE " + registers[registerAllotted.get(temp0)]+ "HALLOCATE ");
-	    	      n.f1.accept(this);
+	    	      System.out.printf("MOVE " + registers[registerAllotted.get(temp0)]+ " HALLOCATE ");
+	    	      nPrime.f1.accept(this);
 	    	  }
     	  }
     	  else {
@@ -480,7 +480,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 	          }
 	          else {
 	    	      System.out.printf("MOVE v0 HALLOCATE ");
-	    	      n.f1.accept(this);
+	    	      nPrime.f1.accept(this);
 	    	      System.out.printf("\tASTORE SPILLEDARG " + locationOnStack.get(temp0) + " v0");
 	          }
     	  }
@@ -1039,8 +1039,11 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       else {
     	  // UPDATE : Don't need to handle it. Because it gets handled on top. Nonetheless. Do it later
     	  //TODO : Position on the stack as it is being spilled.
+    	  System.out.println("SPILLEDARG " + Integer.parseInt(n.f1.f0.tokenImage));
+    	  /*
     	  System.out.println("SPILLED?" + n.f1.f0.tokenImage);
     	  System.out.println("Entry Set : " + locationOnStack.entrySet());
+    	  */
       }
       return _ret;
    }

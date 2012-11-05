@@ -6,7 +6,6 @@ INDEX VERSION 1.126+/home/akhilesh/Desktop/Acads/V_Sem/CS3310/P6/.metadata/.plug
 3251998449.index
 1105907752.index
 2969917345.index
-2530518218.index
 2182944619.index
 3863304606.index
 398999720.index
