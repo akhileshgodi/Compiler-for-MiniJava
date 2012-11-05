@@ -1,0 +1,29 @@
+import java.util.HashMap;
+
+import dataStructures.ControlFlowGraph;
+import syntaxtree.*;
+import visitor.*;
+
+public class Main {
+
+	public static void main(String [] args) {
+      try {
+    	 Node root = new microIRParser(System.in).Goal();
+         //System.out.println("Program parsed successfully");
+         //root.accept(new GJNoArguDepthFirst()); // Your assignment part is invoked here.
+         HashMap<String, ControlFlowGraph> CFGS = (HashMap<String, ControlFlowGraph>)root.accept(new LivenessAnalysis()); // Your assignment part is invoked here.
+         root.accept(new LinearScan(CFGS));
+         Integer temp = 5;
+   	  		String s;
+   	  		s=temp.toString()
+   	  				System.out.println(s);
+         //GJVisitor<Node, Object> v =  new AnalysisVisitor();
+         //root.accept(v, null); // Your assignment part is invoked here.
+         
+      }
+      catch (ParseException e) {
+         System.out.println(e.toString());
+      }
+   }
+} 
+

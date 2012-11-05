@@ -98,8 +98,9 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 		/*
 		for(String label : registerAllocation.keySet()){
 			HashMap<Integer, Integer> regAlloc = registerAllocation.get(label);
-		    System.out.println("--------REGISTER ALLOCATION FOR : " + label +  "-------------------");
-			System.out.println(regAlloc.entrySet());
+			HashMap<Integer, Integer> stAlloc = stackAllocation.get(label);
+ 		    System.out.println("--------REGISTER ALLOCATION FOR : " + label +  "-------------------");
+			System.out.println(regAlloc.entrySet() + " \n" + stAlloc.entrySet());
 			System.out.println("----------------------------END---------------------------");
 		}*/
 		
@@ -114,6 +115,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 			ExpireOldIntervals(i);
 			if(active.size() == registers.length/*R*/){
 				SpillAtInterval(i);
+				//System.out.println("Spilling at : " + i);
 			}
 			else{
 				int reg = getFreeRegister();
@@ -161,7 +163,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 			sortActive();
 		}
 		else {
-			locationOnStack.put(spillTemp,stackLocation++);
+			locationOnStack.put(sortedStartPoint.get(interval),stackLocation++);
 		}
 	}
 
@@ -243,7 +245,9 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 
    public R visit(NodeOptional n) {
       if ( n.present() ) {
-    	 return n.node.accept(this);
+    	 R no = n.node.accept(this);
+    	 System.out.println();
+    	 return no;
       }
       else
          return null;
@@ -279,7 +283,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       presentCFG = allCFGs.get(currentProcedure);
       registerAllotted = registerAllocation.get(currentProcedure);
       locationOnStack = stackAllocation.get(currentProcedure);
-      System.out.printf("MAIN [ 0 ] [ " + (presentCFG.maxCallerSaveRegisters + presentCFG.noOfCalleeSaveRegisters + locationOnStack.values().size()+ presentCFG.maxParamsOnStack )+ locationOnStack.values().size() +" ] " +"[ "  + presentCFG.maxParams + " ]\n");
+      System.out.printf("MAIN [ 0 ] [ " + (presentCFG.maxCallerSaveRegisters + presentCFG.noOfCalleeSaveRegisters + locationOnStack.values().size()+ presentCFG.maxParamsOnStack + locationOnStack.values().size()) +" ] " +"[ "  + presentCFG.maxParams + " ]\n");
       n.f1.accept(this);
       n.f2.accept(this);
       System.out.println("END ");
@@ -338,6 +342,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     */
    public R visit(Stmt n) {
       R _ret=null;
+      System.out.printf("\t");
       n.f0.accept(this);
       return _ret;
    }
@@ -372,20 +377,23 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
    public R visit(CJumpStmt n) {
       R _ret=null;
       n.f0.accept(this);
-      /*
+      
       if(registerAllotted.keySet().contains(Integer.parseInt(n.f1.f1.f0.tokenImage))){
-    	  String register = registers[registerAllotted.get(Integer.parseInt (n.f1.f0.tokenImage))];
-    	  System.out.printf(register + " ");
+    	  String register = registers[registerAllotted.get(Integer.parseInt (n.f1.f1.f0.tokenImage))];
+    	  System.out.printf("CJUMP " + register + " ");
       }
       else {
-    	  //TODO : Position on the stack as it is being spilled.
+    	  int noOfParams = presentCFG.itsParamsSize - 4;
+    	  if(noOfParams < 0) noOfParams = 0;
+    	  System.out.println("ALOAD v1 SPILLEDARG " + (presentCFG.noOfCalleeSaveRegisters + noOfParams + locationOnStack.get(Integer.parseInt(n.f1.f1.f0.tokenImage))));
+    	  System.out.println("\tCJUMP v1 ");
+    	  /*
     	  System.out.println("SPILLED?" + n.f1.f0.tokenImage);
     	  System.out.println("Entry Set : " + locationOnStack.entrySet());
+      	*/
       }
-      System.out.printf("CJUMP ");
-      */
-      n.f1.accept(this);
       
+      //n.f1.accept(this);
       n.f2.accept(this);
       System.out.println();
       presentInstructionNumber++;
@@ -415,11 +423,51 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
    public R visit(HStoreStmt n) {
       R _ret=null;
       n.f0.accept(this);
-      System.out.printf("HSTORE ");
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
-      System.out.println();
+      int temp1 = Integer.parseInt(n.f1.f1.f0.tokenImage);
+      int temp2 = Integer.parseInt(n.f3.f1.f0.tokenImage);
+	  if(registerAllotted.keySet().contains(temp1) && registerAllotted.keySet().contains(temp2)){
+		  //Both have registers allotted.
+		  String register1 = registers[registerAllotted.get(temp1)];
+		  String register2 = registers[registerAllotted.get(temp2)];
+		  System.out.printf("HSTORE " + register1 + " " );
+		  n.f2.accept(this);
+		  System.out.printf(register2 + " ");
+	  }
+	  else if(registerAllotted.keySet().contains(temp1) && !registerAllotted.keySet().contains(temp2)){
+		  String register1 = registers[registerAllotted.get(temp1)];
+		  int noOfParams = presentCFG.itsParamsSize-4;
+		  if(noOfParams < 0) noOfParams = 0;
+		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+		  System.out.println("ALOAD v1 SPILLEDARG " + offset);
+		  System.out.printf("\tHSTORE " + register1 + " " );
+		  n.f2.accept(this);
+		  System.out.printf( "v1 ");
+	  }
+	  else if(!registerAllotted.keySet().contains(temp1) && registerAllotted.keySet().contains(temp2)){
+		  String register2 = registers[registerAllotted.get(temp2)];
+		  int noOfParams = presentCFG.itsParamsSize-4;
+		  if(noOfParams < 0) noOfParams = 0;
+		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
+		  System.out.println("ALOAD v1 SPILLEDARG " + offset);
+		  System.out.printf("\tHSTORE v1 ");
+		  n.f2.accept(this);
+		  System.out.printf(register2);
+	  }
+	  else {
+		  int noOfParams = presentCFG.itsParamsSize-4;
+		  if(noOfParams < 0) noOfParams = 0;
+		  int offset1 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
+		  int offset2 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+		  System.out.println("ALOAD v0 SPILLEDARG " + offset1);
+		  System.out.println("\tALOAD v1 SPILLEDARG " + offset2);
+		  System.out.println("\tHSTORE " + "v0" + " " );
+		  n.f2.accept(this);
+		  System.out.printf("v1 ");
+	  }
+      	  //n.f1.accept(this);
+	      //n.f2.accept(this);
+	      //n.f3.accept(this);
+	  System.out.println();
       presentInstructionNumber++;
       return _ret;
    }
@@ -433,10 +481,46 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
    public R visit(HLoadStmt n) {
       R _ret=null;
       n.f0.accept(this);
-      System.out.printf("HLOAD ");
-      n.f1.accept(this);
-      n.f2.accept(this);
-      n.f3.accept(this);
+      int temp1 = Integer.parseInt(n.f1.f1.f0.tokenImage);
+      int temp2 = Integer.parseInt(n.f2.f1.f0.tokenImage);
+	  if(registerAllotted.keySet().contains(temp1) && registerAllotted.keySet().contains(temp2)){
+		  //Both have registers allotted.
+		  String register1 = registers[registerAllotted.get(temp1)];
+		  String register2 = registers[registerAllotted.get(temp2)];
+		  System.out.printf("HLOAD " + register1 + " " + register2 + " ");
+		  n.f3.accept(this);
+	  }
+	  else if(registerAllotted.keySet().contains(temp1) && !registerAllotted.keySet().contains(temp2)){
+		  String register1 = registers[registerAllotted.get(temp1)];
+		  int noOfParams = presentCFG.itsParamsSize-4;
+		  if(noOfParams < 0) noOfParams = 0;
+		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+		  System.out.println("ALOAD v1 SPILLEDARG " + offset);
+		  System.out.printf("\tHLOAD " + register1 + " v1 "+ " ");
+		  n.f3.accept(this);
+	  }
+	  else if(!registerAllotted.keySet().contains(temp1) && registerAllotted.keySet().contains(temp2)){
+		  String register2 = registers[registerAllotted.get(temp2)];
+		  int noOfParams = presentCFG.itsParamsSize-4;
+		  if(noOfParams < 0) noOfParams = 0;
+		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
+		  System.out.println("ALOAD v1 SPILLEDARG " + offset);
+		  System.out.printf("\tHLOAD v1 " + register2);
+		  n.f3.accept(this);
+	  }
+	  else {
+		  int noOfParams = presentCFG.itsParamsSize-4;
+		  if(noOfParams < 0) noOfParams = 0;
+		  int offset1 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
+		  int offset2 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+		  System.out.println("ALOAD v0 SPILLEDARG " + offset1);
+		  System.out.println("\tALOAD v1 SPILLEDARG " + offset2);
+		  System.out.printf("\tHLOAD " + "v0 "  + "v1 "+ " ");
+		  n.f3.accept(this);
+	  }
+      	  //n.f1.accept(this);
+	      //n.f2.accept(this);
+	      //n.f3.accept(this);
 
       System.out.println();
       presentInstructionNumber++;
@@ -450,7 +534,245 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     */
    public R visit(MoveStmt n) {
       R _ret=null;
+      int temp1 = Integer.parseInt(n.f1.f1.f0.tokenImage);
+      if(n.f2.f0.choice instanceof Call) {
+    	  n.f2.accept(this);
+    	  n.f0.accept(this);
+    	  if(registerAllotted.containsKey(temp1)){
+    		  System.out.printf("\tMOVE ");
+        	  n.f1.accept(this);
+        	  System.out.printf("v0 ");
+    	  }
+    	  else {
+    		  int noOfParams = presentCFG.itsParamsSize-4;
+      		  if(noOfParams < 0) noOfParams = 0;
+      		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
+      		  n.f2.accept(this);
+      		  System.out.printf("ASTORE SPILLEDARG " + offset + " v0");
+    	  }
+      }
       
+      else if( n.f2.f0.choice instanceof HAllocate){
+    	  // TODO : HANDLE SPILLED CASE
+    	  System.out.printf("MOVE ");
+    	  n.f0.accept(this);
+    	  n.f1.accept(this);
+    	  n.f2.accept(this);
+      }
+      
+      else if(n.f2.f0.choice instanceof BinOp){
+    	  BinOp nPrime = (BinOp)n.f2.f0.choice;
+    	  int temp2 = Integer.parseInt(nPrime.f1.f1.f0.tokenImage);
+    	  if(nPrime.f2.f0.choice instanceof Temp){
+    		Temp tmp = (Temp)nPrime.f2.f0.choice;
+    		int temp3 = Integer.parseInt(tmp.f1.f0.tokenImage);
+    		if(registerAllotted.containsKey(temp1)){
+    			if(registerAllotted.containsKey(temp2)){
+    				if(registerAllotted.containsKey(temp3)){
+    					System.out.printf("MOVE " + registers[registerAllotted.get(temp1)] + " " );
+    	    			nPrime.f0.accept(this);
+    	    			System.out.printf(registers[registerAllotted.get(temp2)] + " " + registers[registerAllotted.get(temp3)]);
+    				}
+    				else {
+    					int noOfParams = presentCFG.itsParamsSize-4;
+    	        		if(noOfParams < 0) noOfParams = 0;
+    	        		int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp3);
+    	        		System.out.println("ALOAD v1 SPILLEDARG " + offset );
+    	        		System.out.printf("\tMOVE " + registers[registerAllotted.get(temp1)] + " " );
+    	    			nPrime.f0.accept(this);
+    	    			System.out.printf(registers[registerAllotted.get(temp2)] + " v1");
+        			}
+    			}
+    			else {
+    				if(registerAllotted.containsKey(temp3)){
+    					int noOfParams = presentCFG.itsParamsSize-4;
+    	        		if(noOfParams < 0) noOfParams = 0;
+    	        		int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+    	        		System.out.println("ALOAD v1 SPILLEDARG " + offset );
+    	        		System.out.printf("\tMOVE " + registers[registerAllotted.get(temp1)] + " " );
+    	    			nPrime.f0.accept(this);
+    	    			System.out.printf("v1 " + registers[registerAllotted.get(temp3)] );
+        			}
+    				else {
+    					int noOfParams = presentCFG.itsParamsSize-4;
+    	        		if(noOfParams < 0) noOfParams = 0;
+    	        		int offset3 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp3);
+    	        		System.out.println("ALOAD v1 SPILLEDARG " + offset3 );
+    	        		noOfParams = presentCFG.itsParamsSize-4;
+    	        		if(noOfParams < 0) noOfParams = 0;
+    	        		int offset2 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+    	        		System.out.println("\tALOAD v0 SPILLEDARG " + offset2 );
+    	        		System.out.printf("\tMOVE " + registers[registerAllotted.get(temp1)] + " " );
+    	    			nPrime.f0.accept(this);
+    	    			System.out.printf("v0 " + "v1 ");
+        			}
+    			}
+    		}
+    		else {
+    			int temp1Location = presentCFG.itsParamsSize-4;
+      		  	if(temp1Location < 0) temp1Location = 0;
+      		  	int offset1 = temp1Location + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+      		  
+    			if(registerAllotted.containsKey(temp2)){
+    				if(registerAllotted.containsKey(temp3)){
+    					System.out.printf("MOVE  v0 " );
+    	    			nPrime.f0.accept(this);
+    					System.out.println(registers[registerAllotted.get(temp2)] + " " + registers[registerAllotted.get(temp3)]);
+    					System.out.printf("\tASTORE "+ "SPILLEDARG " + offset1 +  " v0 ");
+    				}
+    				else {
+    					int noOfParams = presentCFG.itsParamsSize-4;
+    	        		if(noOfParams < 0) noOfParams = 0;
+    	        		int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp3);
+    	        		System.out.println("ALOAD v1 SPILLEDARG " + offset );
+    	        		System.out.printf("\tMOVE v0 " );
+    	    			nPrime.f0.accept(this);
+    	    			System.out.println(registers[registerAllotted.get(temp2)] + " v1");
+    	    			System.out.printf("\tASTORE "+ "SPILLEDARG " + offset1 +  " v0 ");
+        			}
+    			}
+    			else {
+    				if(registerAllotted.containsKey(temp3)){
+    					int noOfParams = presentCFG.itsParamsSize-4;
+    	        		if(noOfParams < 0) noOfParams = 0;
+    	        		int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+    	        		System.out.println("ALOAD v1 SPILLEDARG " + offset );
+    	        		System.out.printf("\tMOVE v0 " );
+    	    			nPrime.f0.accept(this);
+    	    			System.out.println("v1 " + registers[registerAllotted.get(temp3)] );
+    	    			System.out.printf("\tASTORE "+ "SPILLEDARG " + offset1 +  " v0 ");
+        				
+        			}
+    				else {
+    					int noOfParams = presentCFG.itsParamsSize-4;
+    	        		if(noOfParams < 0) noOfParams = 0;
+    	        		int offset3 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp3);
+    	        		System.out.println("ALOAD v1 SPILLEDARG " + offset3 );
+    	        		noOfParams = presentCFG.itsParamsSize-4;
+    	        		if(noOfParams < 0) noOfParams = 0;
+    	        		int offset2 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+    	        		System.out.println("\tALOAD v0 SPILLEDARG " + offset2 );
+    	        		System.out.printf("\tMOVE v0 " );
+    	    			nPrime.f0.accept(this);
+    	    			System.out.println("v0 " + "v1 ");
+    	    			System.out.printf("\tASTORE "+ "SPILLEDARG " + offset1 +  " v0 ");
+        			}
+    			}
+    		}
+    	  }	
+    	  else if(nPrime.f2.f0.choice instanceof IntegerLiteral){
+    			IntegerLiteral l = (IntegerLiteral)nPrime.f2.f0.choice;
+    		  		if(registerAllotted.containsKey(temp1)){
+        				if(registerAllotted.containsKey(temp2)){
+        					System.out.printf("MOVE " + registers[registerAllotted.get(temp1)] + " " );
+        	    			nPrime.f0.accept(this);
+        					System.out.printf(registers[registerAllotted.get(temp2)] + " ");
+        					l.accept(this);
+        				}
+        				else {
+        					int noOfParams = presentCFG.itsParamsSize-4;
+        	        		if(noOfParams < 0) noOfParams = 0;
+        	        		int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+        	        		System.out.println("ALOAD v1 SPILLEDARG " + offset );
+        	        		System.out.printf("\tMOVE " + registers[registerAllotted.get(temp1)] + " " );
+        	    			nPrime.f0.accept(this);
+        	    			System.out.printf("v1 ");
+        	    			l.accept(this);
+            			}
+        			}
+        			else {
+        				if(registerAllotted.containsKey(temp2)){
+        					int noOfParams = presentCFG.itsParamsSize-4;
+        	        		if(noOfParams < 0) noOfParams = 0;
+        	        		int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
+        	        		System.out.printf("MOVE v0");
+        	    			nPrime.f0.f0.accept(this);
+        	    			System.out.println("v1 " + registers[registerAllotted.get(temp2)] );
+        	    			System.out.printf("\t ASTORE SPILLEDARG " + offset + " v0");
+            			}
+        				else {
+        					int noOfParams = presentCFG.itsParamsSize-4;
+        	        		if(noOfParams < 0) noOfParams = 0;
+        	        		int offset1 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
+        	        		noOfParams = presentCFG.itsParamsSize-4;
+        	        		if(noOfParams < 0) noOfParams = 0;
+        	        		int offset2 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+        	        		System.out.println("\tALOAD v0 SPILLEDARG " + offset2 );
+        	        		System.out.printf("\tMOVE v0 ");
+        	    			nPrime.f0.f0.accept(this);
+        	    			System.out.println("v0 " + "v1 ");
+        	    			System.out.printf("\t ASTORE SPILLEDARG " + offset1 + " v0");
+                		}
+        			}
+        		
+    	  }
+      }
+      
+      else {
+    	  SimpleExp nPrime = (SimpleExp)n.f2.f0.choice;
+    	  if(nPrime.f0.choice instanceof Temp){
+    		  Temp l = (Temp)nPrime.f0.choice;
+    		  int temp2 = Integer.parseInt(l.f1.f0.tokenImage);
+        	  if(registerAllotted.containsKey(temp1) && registerAllotted.containsKey(temp2)) {
+    	    	  String temp1Location = registers[registerAllotted.get(temp1)];
+    	    	  String temp2Location = registers[registerAllotted.get(temp2)];
+    	    	  System.out.printf("MOVE " + temp1Location + " " + temp2Location);
+        	  }
+        	  else if(registerAllotted.keySet().contains(temp1) && !registerAllotted.keySet().contains(temp2)){
+        		  String register1 = registers[registerAllotted.get(temp1)];
+        		  int noOfParams = presentCFG.itsParamsSize-4;
+        		  if(noOfParams < 0) noOfParams = 0;
+        		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+        		  System.out.println("ALOAD v1 SPILLEDARG " + offset);
+        		  System.out.printf("\tMOVE " + register1 + " v1 "+ " ");
+        	  }
+        	  else if(!registerAllotted.keySet().contains(temp1) && registerAllotted.keySet().contains(temp2)){
+        		  String register2 = registers[registerAllotted.get(temp2)];
+        		  int noOfParams = presentCFG.itsParamsSize-4;
+        		  if(noOfParams < 0) noOfParams = 0;
+        		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
+        		  System.out.printf("ASTORE SPILLEDARG " + offset + " " +  register2);
+        	  }
+        	  else {
+        		  int noOfParams = presentCFG.itsParamsSize-4;
+        		  if(noOfParams < 0) noOfParams = 0;
+        		  int offset1 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
+        		  int offset2 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+        		  System.out.println("ALOAD v1 SPILLEDARG " + offset2);
+        		  System.out.printf("\tASTORE SPILLEDARG " + offset1 + " v1");
+        	  }
+    	  }
+    	  
+    	  else if(nPrime.f0.choice instanceof IntegerLiteral){
+    		  IntegerLiteral l = (IntegerLiteral)nPrime.f0.choice;
+    		  if(registerAllotted.containsKey(temp1)) {
+    	    	  String temp1Location = registers[registerAllotted.get(temp1)];
+    	    	  System.out.printf("MOVE " + temp1Location + " " + l.f0.tokenImage);
+        	  }
+    	      else {
+    	    	  int paramsSize = presentCFG.itsParamsSize-4;
+    	    	  if(paramsSize < 0) paramsSize = 0;
+    	    	  int temp1Location = locationOnStack.get(temp1) + paramsSize + presentCFG.noOfCalleeSaveRegisters;
+    	    	  System.out.println("MOVE v1 "+l.f0.tokenImage);
+        	      System.out.printf("ASTORE SPILLEDARG " + temp1Location + " v1");
+    	    	}
+    	  }
+    	  else{
+    		  Label l = (Label)nPrime.f0.choice;
+    		  if(registerAllotted.containsKey(temp1)) {
+    	    	  String temp1Location = registers[registerAllotted.get(temp1)];
+    	    	  System.out.printf("MOVE " + temp1Location + " " + l.f0.tokenImage);
+        	  }
+    	      else {
+    	    	  int paramsSize = presentCFG.itsParamsSize-4;
+    	    	  if(paramsSize < 0) paramsSize = 0;
+    	    	  int temp1Location = locationOnStack.get(temp1) + paramsSize + presentCFG.noOfCalleeSaveRegisters;
+    	    	  System.out.println("MOVE v1 "+l.f0.tokenImage);
+        	      System.out.printf("ASTORE SPILLEDARG " + temp1Location + " v1");
+    	      }
+    	  }
+      }
+      /*
       if(!(n.f2.f0.choice instanceof Call)){
 	      n.f0.accept(this);
 	      System.out.printf("MOVE ");
@@ -460,7 +782,6 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 	    	  System.out.printf(register + " ");
 	      }
 	      else {
-	    	  //TODO : Position on the stack as it is being spilled.
 	    	  System.out.println("SPILLED?" + n.f1.f1.f0.tokenImage);
 	    	  System.out.println("Entry Set : " + locationOnStack.entrySet());
 	      }
@@ -481,10 +802,10 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       else {
     	  n.f2.accept(this);
     	  n.f0.accept(this);
-    	  System.out.printf("MOVE ");
+    	  System.out.printf("\tMOVE ");
     	  n.f1.accept(this);
     	  System.out.printf("v0 ");
-      }
+      }*/
       System.out.println();
       presentInstructionNumber++;
       return _ret;
@@ -497,13 +818,29 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
    public R visit(PrintStmt n) {
       R _ret=null;
       n.f0.accept(this);
-      System.out.printf("PRINT ");
       if(n.f1.f0.choice instanceof Label){
-		  Label l = (Label)n.f1.f0.choice;
+    	  System.out.printf("PRINT ");
+          Label l = (Label)n.f1.f0.choice;
 		  System.out.println(l.f0.tokenImage);
 	  }
-      else n.f1.accept(this);
-      //TODO : Handle Simple Expression.
+      else if(n.f1.f0.choice instanceof Temp) {
+    	  Temp tmp = (Temp)n.f1.f0.choice;
+    	  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
+    	  if(registerAllotted.containsKey(tempNo)){
+    		  System.out.printf("PRINT " + registers[registerAllotted.get(tempNo)]);
+    	  }
+    	  else {
+    		  int noOfParams = presentCFG.itsParamsSize-4;
+    		  if(noOfParams < 0) noOfParams = 0;
+    		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(tempNo);
+    		  System.out.println("ALOAD v0 SPILLEDARG " + offset );
+    		  System.out.printf("\tPRINT v0");
+    	  }
+      }
+      else {
+    	  System.out.printf("PRINT ");
+    	  n.f1.accept(this);
+      }
       System.out.println();
       presentInstructionNumber++;
       return _ret;
@@ -533,32 +870,57 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       n.f0.accept(this);
       StatementNode stmt = presentCFG.blocks.get(presentInstructionNumber);
       int k = 0;
+      int paramsOnStack = presentCFG.itsParamsSize - 4;
+      if(paramsOnStack < 0) paramsOnStack = 0;
       for(int toStore : presentCFG.toStoreAndLoadCalleeSaveRegisters){
-    	  System.out.println("ASTORE SPILLEDARG " + (presentCFG.maxParamsOnStack + (k++)) + " " + registers[toStore]);
+    	  if(k==0) System.out.println("ASTORE SPILLEDARG " + (paramsOnStack + (k++)) + " " + registers[toStore]);
+    	  else System.out.println("\tASTORE SPILLEDARG " + (paramsOnStack + (k++)) + " " + registers[toStore]);
+    	  
       }
       for(int i = 0; i < stmt.liveIn.size(); i++){
     	if(stmt.liveIn.get(i) < 4) {
-	    	if(registerAllotted.containsKey(stmt.liveIn.get(i))){
-	    		System.out.println("MOVE "+ registers[registerAllotted.get(stmt.liveIn.get(i))] + " a"+ stmt.liveIn.get(i));
+    		if(registerAllotted.containsKey(stmt.liveIn.get(i))){
+	    		System.out.println("\tMOVE "+ registers[registerAllotted.get(stmt.liveIn.get(i))] + " a"+ stmt.liveIn.get(i));
 	    	}
 	    	else{
-	    		//Spilled case : TODO
+	    		int offset = paramsOnStack + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(stmt.liveIn.get(i));
+	    		System.out.println("\tMOVE v1 a"+ stmt.liveIn.get(i));
+	    		System.out.println("\tASTORE SPILLEDARG "+ offset +" v1");
 	    	}
     	}
     	else{
     		if(registerAllotted.containsKey(stmt.liveIn.get(i))){
-    			System.out.println("ALOAD " + "v1" + " SPILLEDARG "+ (stmt.liveIn.get(i)-4));
-	    		System.out.println("MOVE "+ registers[registerAllotted.get(stmt.liveIn.get(i))] + " v1 ");
+    			System.out.println("\tALOAD " + "v1" + " SPILLEDARG "+ (stmt.liveIn.get(i)-4));
+	    		System.out.println("\tMOVE "+ registers[registerAllotted.get(stmt.liveIn.get(i))] + " v1 ");
 	    	}
+    		else {
+    			int offset = paramsOnStack + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(stmt.liveIn.get(i));
+	    		System.out.println("\tALOAD " + "v1" + " SPILLEDARG "+ (stmt.liveIn.get(i)-4));
+    			System.out.println("\tASTORE SPILLEDARG "+ offset +" v1");
+    	    }
 	    }
       }
       n.f1.accept(this);
       n.f2.accept(this);
-      System.out.printf("MOVE v0 ");
-      n.f3.accept(this);
+      if(n.f3.f0.choice instanceof Temp){
+    	  Temp tmp = (Temp)n.f3.f0.choice;
+    	  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
+    	  if(registerAllotted.containsKey(tempNo)){
+    	      System.out.printf("\tMOVE v0 ");
+    	      n.f3.accept(this);
+    	  }
+    	  else{
+    		  int offset = paramsOnStack + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(tempNo);
+    		  System.out.println("ALOAD v0 SPILLEDARG "+offset );
+    	  }
+      }
+      else {
+	      System.out.printf("\tMOVE v0 ");
+	      n.f3.accept(this);
+	  }
       k = 0;
       for(int toLoad : presentCFG.toStoreAndLoadCalleeSaveRegisters){
-    	  System.out.println("ALOAD " + registers[toLoad] + " SPILLEDARG "+  (presentCFG.maxParamsOnStack + (k++)) );
+    	  System.out.println("\tALOAD " + registers[toLoad] + " SPILLEDARG "+  (paramsOnStack + (k++)) );
       }
       
       System.out.println("\nEND ");
@@ -579,24 +941,31 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       int numberOfParameters = n.f3.size();
       Vector<Node> params = n.f3.nodes;
       StatementNode stmt = presentCFG.blocks.get(presentInstructionNumber);
+      int check = 0;
+      int paramsOnStack = presentCFG.itsParamsSize - 4;
+      if(paramsOnStack < 4) paramsOnStack = 0;
+      //TODO : Calculate offset properly based on the number of spilled args right now. Don't store it from the end!
+      int offset = paramsOnStack + presentCFG.noOfCalleeSaveRegisters + locationOnStack.keySet().size() + presentCFG.maxCallerSaveRegisters;
       for(int i = 0 ; i < stmt.liveOut.size(); i++) {
     	  if(registerAllotted.containsKey(stmt.liveOut.get(i))){
     		  if(registerAllotted.get(stmt.liveOut.get(i)) < 10){
-    			  System.out.println("ASTORE SPILLEDARG " + (noOfSpillTemps + i) +" "+ registers[registerAllotted.get(stmt.liveOut.get(i))] + " ");
+    			  if(check == 0)
+    			  System.out.println("ASTORE SPILLEDARG " + (offset - i - 1) +" "+ registers[registerAllotted.get(stmt.liveOut.get(i))] + " ");
+    			  else System.out.println("\tASTORE SPILLEDARG " + (offset- i - 1) +" "+ registers[registerAllotted.get(stmt.liveOut.get(i))] + " ");
+    			   check++;
     		  }
     	  }
       }
-      // TODO : ASTORE : 
-   
-      if(numberOfParameters < 4){
+   if(numberOfParameters < 4){
     	  for(int i = 0 ; i < numberOfParameters; i++){
     		  Temp tmp = (Temp) params.get(i);
     		  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
     		  if(registerAllotted.containsKey(tempNo)){
-    			  System.out.println("MOVE a"+ i + " " + registers[registerAllotted.get(tempNo)]);
+    			  System.out.println("\tMOVE a"+ i + " " + registers[registerAllotted.get(tempNo)]);
     		  }
     		  else {
-    			  //TODO : Spilled case
+    			  System.out.println("ALOAD v1 SPILLEDARG " + (paramsOnStack+presentCFG.noOfCalleeSaveRegisters+locationOnStack.get(tempNo)));
+    			  System.out.println("\tMOVE a"+i + " v1" );
     		  }
     	  }
       }
@@ -605,35 +974,50 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     		  Temp tmp = (Temp) params.get(i);
     		  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
     		  if(registerAllotted.containsKey(tempNo)){
-    			  System.out.println("MOVE a"+ i + " " + registers[registerAllotted.get(tempNo)]);
+    			  System.out.println("\tMOVE a"+ i + " " + registers[registerAllotted.get(tempNo)]);
     		  }
     		  else {
-    			  //TODO : Spilled case
-    		  }
+    			  System.out.println("ALOAD v1 SPILLEDARG " + (paramsOnStack+presentCFG.noOfCalleeSaveRegisters+locationOnStack.get(tempNo)));
+    			  System.out.println("\tMOVE a"+i + " v1" );
+    		 }
     	  }
     	  for(int i = 4; i < numberOfParameters; i++){
     		  Temp tmp = (Temp) params.get(i);
     		  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
     		  if(registerAllotted.containsKey(tempNo)){
-    			  System.out.println("PASSARG "+ (i-3) + " " + registers[registerAllotted.get(tempNo)]);
+    			  System.out.println("\tPASSARG "+ (i-3) + " " + registers[registerAllotted.get(tempNo)]);
     		  }
     		  else {
-    			  //TODO : Spilled case
+    			  System.out.println("ALOAD v1 SPILLEDARG " + (paramsOnStack+presentCFG.noOfCalleeSaveRegisters+locationOnStack.get(tempNo)));
+    			  System.out.println("\tPASSARG " + (i-3) + " v1");
     		  }
     	  }
       }
       n.f0.accept(this);
-      System.out.printf("CALL ");
-      n.f1.accept(this);
+      if(n.f1.f0.choice instanceof Temp) {
+    	  Temp tmp = (Temp)n.f1.f0.choice;
+    	  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
+    	  if(registerAllotted.containsKey(tempNo)){
+    		  System.out.println("\tCALL " + registers[registerAllotted.get(tempNo)]);
+    	  }
+    	  else {
+    		  System.out.println("ALOAD v1 SPILLEDARG " + (paramsOnStack+presentCFG.noOfCalleeSaveRegisters+locationOnStack.get(tempNo)));
+    		  System.out.println("\tCALL v1");
+    	  }
+      }
+      else {
+	      System.out.printf("\tCALL ");
+	      n.f1.accept(this);
+	  }
       System.out.println();
       n.f2.accept(this);
       //n.f3.accept(this);
       n.f4.accept(this);
-      // TODO : ALOAD
+      
       for(int i = 0 ; i < stmt.liveOut.size(); i++) {
     	  if(registerAllotted.containsKey(stmt.liveOut.get(i))){
     		  if(registerAllotted.get(stmt.liveOut.get(i)) < 10){
-    			  System.out.println("ALOAD " + registers[registerAllotted.get(stmt.liveOut.get(i))] + " SPILLEDARG " + (noOfSpillTemps + i) + " ");
+    			  System.out.println("\tALOAD " + registers[registerAllotted.get(stmt.liveOut.get(i))] + " SPILLEDARG " + (offset - i - 1) + " ");
     		  }
     	  }
       }
@@ -647,9 +1031,23 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
    public R visit(HAllocate n) {
       R _ret=null;
       n.f0.accept(this);
-      System.out.printf("HALLOCATE ");
-      n.f1.accept(this);
-      // TODO : Handle types for SimpleExpression
+      if(n.f1.f0.choice instanceof Temp) {
+    	  Temp tmp = (Temp)n.f1.f0.choice;
+    	  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
+    	  if(registerAllotted.containsKey(tempNo)){
+    		  System.out.printf("HALLOCATE " + registers[registerAllotted.get(tempNo)]);
+    	  }
+    	  else {
+    		  int paramsOnStack = presentCFG.itsParamsSize - 4;
+    		  if(paramsOnStack < 0) paramsOnStack = 0;
+    		  System.out.printf("ALOAD v1 SPILLEDARG " + (paramsOnStack+presentCFG.noOfCalleeSaveRegisters+locationOnStack.get(tempNo)));
+    		  System.out.println("HALLOCATE v1 ");
+    	  }
+      }
+      else {
+	      System.out.printf("HALLOCATE ");
+	      n.f1.accept(this);
+	  }
       return _ret;
    }
 
@@ -663,7 +1061,6 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       n.f0.accept(this);
       n.f1.accept(this);
       n.f2.accept(this);
-      // TODO : Handle types for SimpleExpression
       return _ret;
    }
 
@@ -702,11 +1099,13 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       R _ret=null;
       n.f0.accept(this);
       //n.f1.accept(this);
+      /* Now comes here only if register is allotted. Actually it hardly comes here. We check for this on top itself */
       if(registerAllotted.keySet().contains(Integer.parseInt(n.f1.f0.tokenImage))){
     	  String register = registers[registerAllotted.get(Integer.parseInt (n.f1.f0.tokenImage))];
     	  System.out.printf(register + " ");
       }
       else {
+    	  // UPDATE : Don't need to handle it. Because it gets handled on top. Nonetheless. Do it later
     	  //TODO : Position on the stack as it is being spilled.
     	  System.out.println("SPILLED?" + n.f1.f0.tokenImage);
     	  System.out.println("Entry Set : " + locationOnStack.entrySet());

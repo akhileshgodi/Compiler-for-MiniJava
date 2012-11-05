@@ -8,7 +8,8 @@ public class Main {
 
 	public static void main(String [] args) {
       try {
-         Node root = new microIRParser(System.in).Goal();
+    	
+    	 Node root = new microIRParser(System.in).Goal();
          //System.out.println("Program parsed successfully");
          //root.accept(new GJNoArguDepthFirst()); // Your assignment part is invoked here.
          HashMap<String, ControlFlowGraph> CFGS = (HashMap<String, ControlFlowGraph>)root.accept(new LivenessAnalysis()); // Your assignment part is invoked here.
