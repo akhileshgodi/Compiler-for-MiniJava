@@ -64,7 +64,6 @@ public class ControlFlowGraph {
 	
 	/*-----For debugging only!-----*/
 	public void printGraph(){
-		
 		for(int i = 0; i < blocks.size(); i++){
 			System.out.printf("Block " + i + ": ");
 			String type = null;

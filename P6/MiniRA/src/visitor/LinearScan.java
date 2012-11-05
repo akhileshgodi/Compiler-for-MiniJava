@@ -34,7 +34,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 	List<Integer> sortedStartPoint;
 	List<Integer> sortedEndPoint;
 	ArrayList<Integer> active;
-	HashMap<Integer, Integer> registerAllotted; //Key : TempNumber, Value : enumeratedVersion of Register allotted
+	HashMap<Integer, Integer> registerAllotted; //Key : TempNumber,Value : enumeratedVersion of Register allotted
 	HashMap<Integer, Integer> locationOnStack;
 	ArrayList<Integer> freeRegisters;
 	ControlFlowGraph presentCFG;
@@ -68,7 +68,8 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 					calleeSave.add(regForTemp);
 				}
 			}
-			presentCFG.noOfCalleeSaveRegisters = calleeSave.size();
+			if(!label.equals("MAIN"))
+				presentCFG.noOfCalleeSaveRegisters = calleeSave.size();
 			presentCFG.toStoreAndLoadCalleeSaveRegisters = calleeSave;
 			//Computing info for call stack size, et al.
 			for(StatementNode stmt : presentCFG.blocks){
@@ -77,7 +78,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 						presentCFG.maxParams = stmt.callStackSize;
 					}
 					if(presentCFG.maxParams > 4){
-						presentCFG.maxParamsOnStack = presentCFG.maxParams - 4;
+						presentCFG.maxParamsOnStack = presentCFG.maxParams - 3;
 					}
 					int callerCount = 0;
 					for(int i = 0 ; i < stmt.liveOut.size(); i++) {
@@ -105,119 +106,6 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 		}*/
 		
 	}
-	
-	/**
-	 * 
-	 */
-	private void LinearScanRegisterAllocation() {
-		active = new ArrayList<Integer>();
-		for(int i = 0 ; i < sortedStartPoint.size() ; i++){
-			ExpireOldIntervals(i);
-			if(active.size() == registers.length/*R*/){
-				SpillAtInterval(i);
-				//System.out.println("Spilling at : " + i);
-			}
-			else{
-				int reg = getFreeRegister();
-				registerAllotted.put(sortedStartPoint.get(i), reg );
-				active.add(sortedStartPoint.get(i));
-				sortActive();
-				// Sort by increasing end Point now?
-				//Collections.sort(active);
-			}
-		}
-	}
-	
-	private void sortActive(){
-		for(int i = 0 ; i < active.size(); i++){
-			for(int j = 0; j < i; j++){
-				if(presentCFG.endPoints.get(active.get(j)) > presentCFG.endPoints.get(active.get(i))){
-					int temp1 = active.get(j);
-					int temp2 = active.get(i);
-					active.remove(j);
-					active.add(j,temp2);
-					active.remove(i);
-					active.add(i,temp1);
-				}
-			}
-		}
-	}
-	
-	private int getFreeRegister(){
-		if(freeRegisters.size() > 0) {
-			return freeRegisters.remove(0);
-		}
-		else return -1;
-	}
-	/**
-	 * @param i
-	 */
-	private void SpillAtInterval(int interval) {
-		int spillTemp = active.get(active.size()-1);
-		if(presentCFG.endPoints.get(spillTemp) > presentCFG.endPoints.get(sortedStartPoint.get(interval))){
-			registerAllotted.put(sortedStartPoint.get(interval), registerAllotted.get(spillTemp));
-			registerAllotted.remove(spillTemp);
-			locationOnStack.put(spillTemp,stackLocation++);
-			active.remove(active.indexOf(spillTemp));
-			active.add(sortedStartPoint.get(interval));
-			sortActive();
-		}
-		else {
-			locationOnStack.put(sortedStartPoint.get(interval),stackLocation++);
-		}
-	}
-
-	/**
-	 * @param i
-	 */
-	private void ExpireOldIntervals(int interval) {
-		for(int j = 0 ; j < active.size(); j++){
-			if(presentCFG.endPoints.get(active.get(j)) >= presentCFG.startPoints.get(sortedStartPoint.get(interval))){
-				return;
-			}
-			addFreeRegister(registerAllotted.get(active.get(j)));
-			active.remove(j);
-			j = j-1;
-			sortActive();
-		}
-	}
-
-	/**
-	 * @param integer
-	 */
-	private void addFreeRegister(int i) {
-		freeRegisters.add(i);
-		Collections.sort(freeRegisters);
-	}
-
-	/* ----- The code for sorting a hashmap is inspired from Stack Overflow-------- */
-	public LinkedHashMap<Integer, Integer> sortHashMap(HashMap<Integer, Integer> passedMap) {
-	    List<Integer> mapKeys = new ArrayList<Integer>(passedMap.keySet());
-	    List<Integer> mapValues = new ArrayList<Integer>(passedMap.values());
-	    LinkedHashMap<Integer, Integer> sortedMap = new LinkedHashMap<Integer, Integer>();
-
-	    Collections.sort(mapValues);
-	    Collections.sort(mapKeys);
-
-	    Iterator<Integer> it$ = mapValues.iterator();
-	    while (it$.hasNext()) {
-	        Object val = it$.next();
-	        Iterator<Integer> keyIt = mapKeys.iterator();
-	        while (keyIt.hasNext()) {
-	            Object key = keyIt.next();
-	            int comp1 = Integer.parseInt(passedMap.get(key).toString());
-	            int comp2 = Integer.parseInt(val.toString());
-	            if (comp1 == comp2) {
-	                passedMap.remove(key);
-	                mapKeys.remove(key);
-	                sortedMap.put((Integer) key, (Integer) val);
-	                break;
-	            }
-	        }
-	    }
-	    return sortedMap;
-	}	
-	/*-------------------------------------------------------------------------*/
 	
 	public R visit(NodeList n) {
       R _ret=null;
@@ -283,7 +171,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       presentCFG = allCFGs.get(currentProcedure);
       registerAllotted = registerAllocation.get(currentProcedure);
       locationOnStack = stackAllocation.get(currentProcedure);
-      System.out.printf("MAIN [ 0 ] [ " + (presentCFG.maxCallerSaveRegisters + presentCFG.noOfCalleeSaveRegisters + locationOnStack.values().size()+ presentCFG.maxParamsOnStack + locationOnStack.values().size()) +" ] " +"[ "  + presentCFG.maxParams + " ]\n");
+      System.out.printf("MAIN [ 0 ] [ " + (presentCFG.maxCallerSaveRegisters + presentCFG.noOfCalleeSaveRegisters + locationOnStack.values().size()+ presentCFG.maxParamsOnStack ) +" ] " +"[ "  + presentCFG.maxParams + " ]\n");
       n.f1.accept(this);
       n.f2.accept(this);
       System.out.println("END ");
@@ -325,7 +213,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       System.out.printf(n.f3.tokenImage+ " ");
       int itsParamsSizeOnStack = presentCFG.itsParamsSize - 4;
       if(itsParamsSizeOnStack < 0) itsParamsSizeOnStack = 0;
-      System.out.printf("[ " + (itsParamsSizeOnStack + presentCFG.maxCallerSaveRegisters + presentCFG.noOfCalleeSaveRegisters + locationOnStack.values().size() + presentCFG.maxParamsOnStack) + " ] " + "[ "  + presentCFG.maxParamsOnStack + " ]\n");
+      System.out.printf("[ " + (itsParamsSizeOnStack + presentCFG.maxCallerSaveRegisters + presentCFG.noOfCalleeSaveRegisters + locationOnStack.values().size() + presentCFG.maxParamsOnStack) + " ] " + "[ "  + presentCFG.maxParams + " ]\n");
       n.f4.accept(this);
       return _ret;
    }
@@ -553,11 +441,53 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       }
       
       else if( n.f2.f0.choice instanceof HAllocate){
-    	  // TODO : HANDLE SPILLED CASE
-    	  System.out.printf("MOVE ");
-    	  n.f0.accept(this);
-    	  n.f1.accept(this);
-    	  n.f2.accept(this);
+    	  int temp0 = Integer.parseInt(n.f1.f1.f0.tokenImage);
+    	  HAllocate nPrime = (HAllocate)n.f2.f0.choice;
+    	  if(registerAllotted.containsKey(temp0)){
+	    	  if(nPrime.f1.f0.choice instanceof Temp) {
+	        	  Temp tmp = (Temp)nPrime.f1.f0.choice;
+	        	  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
+	        	  if(registerAllotted.containsKey(tempNo)){
+	        		  System.out.printf("MOVE "+ registers[registerAllotted.get(temp0)] + "HALLOCATE " + registers[registerAllotted.get(tempNo)]);
+	        	  }
+	        	  else {
+	        		  int paramsOnStack = presentCFG.itsParamsSize - 4;
+	        		  if(paramsOnStack < 0) paramsOnStack = 0;
+	        		  System.out.printf("ALOAD v1 SPILLEDARG " + (paramsOnStack+presentCFG.noOfCalleeSaveRegisters+locationOnStack.get(tempNo)));
+	        		  System.out.println("MOVE " + registers[registerAllotted.get(temp0)] + "HALLOCATE v1 ");
+	        	  }
+	          }
+	          else {
+	    	      System.out.printf("MOVE " + registers[registerAllotted.get(temp0)]+ "HALLOCATE ");
+	    	      n.f1.accept(this);
+	    	  }
+    	  }
+    	  else {
+    		  if(nPrime.f1.f0.choice instanceof Temp) {
+	        	  Temp tmp = (Temp)nPrime.f1.f0.choice;
+	        	  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
+	        	  if(registerAllotted.containsKey(tempNo)){
+	        		  System.out.printf("MOVE v1 HALLOCATE " + registers[registerAllotted.get(tempNo)]);
+	        		  System.out.printf("\tASTORE SPILLEDARG " + locationOnStack.get(temp0) + " v1");
+	        	  }
+	        	  else {
+	        		  int paramsOnStack = presentCFG.itsParamsSize - 4;
+	        		  if(paramsOnStack < 0) paramsOnStack = 0;
+	        		  System.out.printf("ALOAD v1 SPILLEDARG " + (paramsOnStack+presentCFG.noOfCalleeSaveRegisters+locationOnStack.get(tempNo)));
+	        		  System.out.println("MOVE v0 HALLOCATE v1 ");
+	        		  System.out.printf("\tASTORE SPILLEDARG " + locationOnStack.get(temp0) + " v0");
+	        	  }
+	          }
+	          else {
+	    	      System.out.printf("MOVE v0 HALLOCATE ");
+	    	      n.f1.accept(this);
+	    	      System.out.printf("\tASTORE SPILLEDARG " + locationOnStack.get(temp0) + " v0");
+	          }
+    	  }
+    	  //System.out.printf("MOVE ");
+    	  //n.f0.accept(this);
+    	  //n.f1.accept(this);
+    	  //n.f2.accept(this);
       }
       
       else if(n.f2.f0.choice instanceof BinOp){
@@ -582,7 +512,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     	    			nPrime.f0.accept(this);
     	    			System.out.printf(registers[registerAllotted.get(temp2)] + " v1");
         			}
-    			}
+    		   }
     			else {
     				if(registerAllotted.containsKey(temp3)){
     					int noOfParams = presentCFG.itsParamsSize-4;
@@ -611,7 +541,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     		else {
     			int temp1Location = presentCFG.itsParamsSize-4;
       		  	if(temp1Location < 0) temp1Location = 0;
-      		  	int offset1 = temp1Location + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
+      		  	int offset1 = temp1Location + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
       		  
     			if(registerAllotted.containsKey(temp2)){
     				if(registerAllotted.containsKey(temp3)){
@@ -873,9 +803,9 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       int paramsOnStack = presentCFG.itsParamsSize - 4;
       if(paramsOnStack < 0) paramsOnStack = 0;
       for(int toStore : presentCFG.toStoreAndLoadCalleeSaveRegisters){
-    	  if(k==0) System.out.println("ASTORE SPILLEDARG " + (paramsOnStack + (k++)) + " " + registers[toStore]);
-    	  else System.out.println("\tASTORE SPILLEDARG " + (paramsOnStack + (k++)) + " " + registers[toStore]);
-    	  
+    	  if(k==0) System.out.println("ASTORE SPILLEDARG " + (paramsOnStack + (k)) + " " + registers[toStore]);
+    	  else System.out.println("\tASTORE SPILLEDARG " + (paramsOnStack + (k)) + " " + registers[toStore]);
+    	  k++;
       }
       for(int i = 0; i < stmt.liveIn.size(); i++){
     	if(stmt.liveIn.get(i) < 4) {
@@ -946,13 +876,14 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       if(paramsOnStack < 4) paramsOnStack = 0;
       //TODO : Calculate offset properly based on the number of spilled args right now. Don't store it from the end!
       int offset = paramsOnStack + presentCFG.noOfCalleeSaveRegisters + locationOnStack.keySet().size() + presentCFG.maxCallerSaveRegisters;
+      int count = 0;
       for(int i = 0 ; i < stmt.liveOut.size(); i++) {
     	  if(registerAllotted.containsKey(stmt.liveOut.get(i))){
     		  if(registerAllotted.get(stmt.liveOut.get(i)) < 10){
     			  if(check == 0)
-    			  System.out.println("ASTORE SPILLEDARG " + (offset - i - 1) +" "+ registers[registerAllotted.get(stmt.liveOut.get(i))] + " ");
-    			  else System.out.println("\tASTORE SPILLEDARG " + (offset- i - 1) +" "+ registers[registerAllotted.get(stmt.liveOut.get(i))] + " ");
-    			   check++;
+    			  System.out.println("ASTORE SPILLEDARG " + (offset - count - 1) +" "+ registers[registerAllotted.get(stmt.liveOut.get(i))] + " ");
+    			  else System.out.println("\tASTORE SPILLEDARG " + (offset- count - 1) +" "+ registers[registerAllotted.get(stmt.liveOut.get(i))] + " ");
+    			   count++;
     		  }
     	  }
       }
@@ -1013,11 +944,12 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       n.f2.accept(this);
       //n.f3.accept(this);
       n.f4.accept(this);
-      
+      count = 0;
       for(int i = 0 ; i < stmt.liveOut.size(); i++) {
     	  if(registerAllotted.containsKey(stmt.liveOut.get(i))){
     		  if(registerAllotted.get(stmt.liveOut.get(i)) < 10){
-    			  System.out.println("\tALOAD " + registers[registerAllotted.get(stmt.liveOut.get(i))] + " SPILLEDARG " + (offset - i - 1) + " ");
+    			  System.out.println("\tALOAD " + registers[registerAllotted.get(stmt.liveOut.get(i))] + " SPILLEDARG " + (offset - count - 1) + " ");
+    			  count++;
     		  }
     	  }
       }
@@ -1132,5 +1064,120 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       System.out.printf(currentProcedure + "_" + n.f0.tokenImage + " ");
       return _ret;
    }
+   
+   	/*------------------------------------------------------------------------------------*/
+	/**
+	 * 
+	 */
+	private void LinearScanRegisterAllocation() {
+		active = new ArrayList<Integer>();
+		for(int i = 0 ; i < sortedStartPoint.size() ; i++){
+			ExpireOldIntervals(i);
+			if(active.size() == registers.length/*R*/){
+				SpillAtInterval(i);
+				//System.out.println("Spilling at : " + i);
+			}
+			else{
+				int reg = getFreeRegister();
+				registerAllotted.put(sortedStartPoint.get(i), reg );
+				active.add(sortedStartPoint.get(i));
+				sortActive();
+				// Sort by increasing end Point now?
+				//Collections.sort(active);
+			}
+		}
+	}
+	
+	private void sortActive(){
+		for(int i = 0 ; i < active.size(); i++){
+			for(int j = 0; j < i; j++){
+				if(presentCFG.endPoints.get(active.get(j)) > presentCFG.endPoints.get(active.get(i))){
+					int temp1 = active.get(j);
+					int temp2 = active.get(i);
+					active.remove(j);
+					active.add(j,temp2);
+					active.remove(i);
+					active.add(i,temp1);
+				}
+			}
+		}
+	}
+	
+	private int getFreeRegister(){
+		if(freeRegisters.size() > 0) {
+			return freeRegisters.remove(0);
+		}
+		else return -1;
+	}
+	/**
+	 * @param i
+	 */
+	private void SpillAtInterval(int interval) {
+		int spillTemp = active.get(active.size()-1);
+		if(presentCFG.endPoints.get(spillTemp) > presentCFG.endPoints.get(sortedStartPoint.get(interval))){
+			registerAllotted.put(sortedStartPoint.get(interval), registerAllotted.get(spillTemp));
+			registerAllotted.remove(spillTemp);
+			locationOnStack.put(spillTemp,stackLocation++);
+			active.remove(active.indexOf(spillTemp));
+			active.add(sortedStartPoint.get(interval));
+			sortActive();
+		}
+		else {
+			locationOnStack.put(sortedStartPoint.get(interval),stackLocation++);
+		}
+	}
+
+	/**
+	 * @param i
+	 */
+	private void ExpireOldIntervals(int interval) {
+		for(int j = 0 ; j < active.size(); j++){
+			if(presentCFG.endPoints.get(active.get(j)) >= presentCFG.startPoints.get(sortedStartPoint.get(interval))){
+				return;
+			}
+			addFreeRegister(registerAllotted.get(active.get(j)));
+			active.remove(j);
+			j = j-1;
+			sortActive();
+		}
+	}
+
+	/**
+	 * @param integer
+	 */
+	private void addFreeRegister(int i) {
+		freeRegisters.add(i);
+		Collections.sort(freeRegisters);
+	}
+
+	/* ----- The code for sorting a hashmap is inspired from Stack Overflow-------- */
+	public LinkedHashMap<Integer, Integer> sortHashMap(HashMap<Integer, Integer> passedMap) {
+	    List<Integer> mapKeys = new ArrayList<Integer>(passedMap.keySet());
+	    List<Integer> mapValues = new ArrayList<Integer>(passedMap.values());
+	    LinkedHashMap<Integer, Integer> sortedMap = new LinkedHashMap<Integer, Integer>();
+
+	    Collections.sort(mapValues);
+	    Collections.sort(mapKeys);
+
+	    Iterator<Integer> it$ = mapValues.iterator();
+	    while (it$.hasNext()) {
+	        Object val = it$.next();
+	        Iterator<Integer> keyIt = mapKeys.iterator();
+	        while (keyIt.hasNext()) {
+	            Object key = keyIt.next();
+	            int comp1 = Integer.parseInt(passedMap.get(key).toString());
+	            int comp2 = Integer.parseInt(val.toString());
+	            if (comp1 == comp2) {
+	                passedMap.remove(key);
+	                mapKeys.remove(key);
+	                sortedMap.put((Integer) key, (Integer) val);
+	                break;
+	            }
+	        }
+	    }
+	    return sortedMap;
+	}	
+	/*-------------------------------------------------------------------------*/
+	
 
 }

@@ -328,7 +328,7 @@ public class GJNoArguDepthFirst<R> implements GJNoArguVisitor<R> {
       retTempNo = temp2;
       n.f2.accept(this);
       System.out.printf("\tMOVE TEMP " + temp2 + " CALL TEMP " + temp1 + " ( ");
-      for(i = 0; i < tempArr.length; i++) {
+      for(int i = 0; i < tempArr.length; i++) {
         System.out.print(" TEMP " + tempArr[i] + " ");
       }
       n.f4.accept(this);

@@ -106,11 +106,11 @@ public class LivenessAnalysis<R> implements GJNoArguVisitor<R> {
       n.f1.accept(this);
       n.f2.accept(this);
       CFG.blocks.get(instructionNumber-1).removeSuccessor(instructionNumber);
-      endOfMain = instructionNumber-1;
       allCFGs.put("MAIN", this.CFG);
       // The blocks from here are disconnected
       n.f3.accept(this);
       n.f4.accept(this);
+      
       for(String s : allCFGs.keySet()){
     	  ControlFlowGraph fg = allCFGs.get(s);
 	      for(StatementNode stmt : fg.blocks){
@@ -136,159 +136,6 @@ public class LivenessAnalysis<R> implements GJNoArguVisitor<R> {
       return (R)allCFGs;
    }
 
-
-
-
-private ControlFlowGraph computeLiveRanges(ControlFlowGraph fg) {
-	// TODO Auto-generated method stub
-	for(StatementNode stmt : fg.blocks){
-		// For live Ins
-		for(int i = 0 ; i < stmt.liveIn.size(); i++){
-			int tempNo = stmt.liveIn.get(i);
-			if(!fg.endPoints.containsKey(tempNo)){
-				fg.endPoints.put(tempNo, stmt.getInstructionNumber());
-			}
-			else {
-				int endPt = fg.endPoints.get(tempNo);
-				if(stmt.getInstructionNumber() >= endPt){
-					fg.endPoints.put(tempNo,stmt.getInstructionNumber());
-				}
-			}
-		}
-		
-		//For live outs
-		for(int i = 0 ; i < stmt.liveOut.size(); i++){
-			int tempNo = stmt.liveOut.get(i);
-			if(!fg.startPoints.containsKey(tempNo)){
-				fg.startPoints.put(tempNo, stmt.getInstructionNumber());
-			}
-			else {
-				int startPt = fg.startPoints.get(tempNo);
-				if(stmt.getInstructionNumber() <= startPt){
-					fg.endPoints.put(tempNo, stmt.getInstructionNumber());
-				}
-			}
-		}
-		
-		for(int i : stmt.getDef()){
-			if(!stmt.liveIn.contains(i) && !stmt.liveOut.contains(i)) {
-				if(!fg.startPoints.containsKey(i)){
-					fg.startPoints.put(i, stmt.getInstructionNumber());
-				}
-				else {
-					fg.endPoints.put(i, stmt.getInstructionNumber());
-				}
-			}
-		}
-		
-		for(int i : fg.endPoints.keySet()){
-			if(!fg.startPoints.containsKey(i)){
-				fg.startPoints.put(i, fg.endPoints.get(i));
-			}
-		}
-		
-		for(int i : fg.startPoints.keySet()){
-			if(!fg.endPoints.containsKey(i)){
-				fg.endPoints.put(i, fg.startPoints.get(i));
-			}
-		}
-	}
-	return fg;
-}
-
-	/**
-	 * 
-	 */
-	private ControlFlowGraph computeLiveness(ControlFlowGraph fg) {
-		// TODO Auto-generated method stub
-		//System.out.println("Liveness");
-		//System.out.printf(" : "  + fg.blocks.size() + "\n");
-		change = true;
-		while(change) {
-			change = false;
-			for(int i = fg.blocks.size()-1 ; i >= 0  ; i--){
-				StatementNode stmt = fg.blocks.get(i);
-				//System.out.println(stmt.statementType);
-				//stmt.inPrime = stmt.getLiveIn();
-				//stmt.outPrime = stmt.getLiveOut();
-				//System.out.println(stmt.getSuccessors().size());
-				for(int j = 0; j < stmt.getSuccessors().size(); j++) {
-					StatementNode succJ = fg.blocks.get(stmt.getSuccessors().get(j));
-					listMergerFromTo(succJ.liveIn, stmt.liveOut);
-				}
-				
-				ArrayList<Integer> outMinusDef = ListDifference(stmt.liveOut, stmt.getDef());
-				ListUnion(stmt.getUse(),outMinusDef,stmt.liveIn);
-			}
-		}
-		return fg;
-	}
-
-/**
-	 * @param liveIn
-	 * @param liveOut
-	 */
-	private void listMergerFromTo(ArrayList<Integer> lst1, ArrayList<Integer> lst2) {
-		// TODO Auto-generated method stub
-		for(int i = 0; i < lst1.size(); i++) {
-			if(!lst2.contains(lst1.get(i))) {
-				lst2.add(lst1.get(i));
-				change = true;
-			}
-		}
-	}
-
-/**
-	 * @return
-	 */
-	/*
-	private boolean noChange() {
-		// TODO Auto-generated method stub
-		for(int i = 0 ; i < CFG.blocks.size(); i++){
-			StatementNode stmt = CFG.blocks.get(i);
-			if(stmt.inPrime.equals(stmt.getLiveIn()) && stmt.outPrime.equals(stmt.getLiveOut())){
-				return false;
-			}
-		}
-		return true;
-	}*/
-
-/**
-	 * @param use
-	 * @param listDifference
-	 * @return
-	 */
-	private void ListUnion(ArrayList<Integer> lst1, ArrayList<Integer> lst2, ArrayList<Integer>result) {
-		// TODO Auto-generated method stub
-		for(int i = 0; i < lst1.size(); i++) {
-			if(!result.contains(lst1.get(i))) {
-				result.add(lst1.get(i));
-				change = true;
-			}
-		}
-		for(int i = 0; i < lst2.size(); i++) {
-			if(!result.contains(lst2.get(i))) {
-				result.add(lst2.get(i));
-				change = true;
-			}
-		}
-	}
-
-/**
-	 * @param liveOut
-	 * @param def
-	 * @return
-	 */
-	private ArrayList<Integer> ListDifference(ArrayList<Integer> lst1, ArrayList<Integer> lst2) {
-		// TODO Auto-generated method stub
-		ArrayList<Integer> result = new ArrayList<Integer>();
-		for(int i = 0; i < lst1.size(); i++) {
-			if(!lst2.contains(lst1.get(i))) {
-				result.add(lst1.get(i));
-			}
-		}
-		return result;
-	}
 
 /**
     * f0 -> ( ( Label() )? Stmt() )*
@@ -621,5 +468,157 @@ private ControlFlowGraph computeLiveRanges(ControlFlowGraph fg) {
       n.f0.accept(this);
       return _ret;
    }
+   /*------------------------------------------------------------------------------------*/
+   
+   private ControlFlowGraph computeLiveRanges(ControlFlowGraph fg) {
+		// TODO Auto-generated method stub
+		for(StatementNode stmt : fg.blocks){
+			// For live Ins
+			for(int i = 0 ; i < stmt.liveIn.size(); i++){
+				int tempNo = stmt.liveIn.get(i);
+				if(!fg.endPoints.containsKey(tempNo)){
+					fg.endPoints.put(tempNo, stmt.getInstructionNumber());
+				}
+				else {
+					int endPt = fg.endPoints.get(tempNo);
+					if(stmt.getInstructionNumber() >= endPt){
+						fg.endPoints.put(tempNo,stmt.getInstructionNumber());
+					}
+				}
+			}
+			
+			//For live outs
+			for(int i = 0 ; i < stmt.liveOut.size(); i++){
+				int tempNo = stmt.liveOut.get(i);
+				if(!fg.startPoints.containsKey(tempNo)){
+					fg.startPoints.put(tempNo, stmt.getInstructionNumber());
+				}
+				else {
+					int startPt = fg.startPoints.get(tempNo);
+					if(stmt.getInstructionNumber() <= startPt){
+						fg.endPoints.put(tempNo, stmt.getInstructionNumber());
+					}
+				}
+			}
+			
+			for(int i : stmt.getDef()){
+				if(!stmt.liveIn.contains(i) && !stmt.liveOut.contains(i)) {
+					if(!fg.startPoints.containsKey(i)){
+						fg.startPoints.put(i, stmt.getInstructionNumber());
+					}
+					else {
+						fg.endPoints.put(i, stmt.getInstructionNumber());
+					}
+				}
+			}
+			
+			for(int i : fg.endPoints.keySet()){
+				if(!fg.startPoints.containsKey(i)){
+					fg.startPoints.put(i, fg.endPoints.get(i));
+				}
+			}
+			
+			for(int i : fg.startPoints.keySet()){
+				if(!fg.endPoints.containsKey(i)){
+					fg.endPoints.put(i, fg.startPoints.get(i));
+				}
+			}
+		}
+		return fg;
+	}
+
+		/**
+		 * 
+		 */
+		private ControlFlowGraph computeLiveness(ControlFlowGraph fg) {
+			// TODO Auto-generated method stub
+			//System.out.println("Liveness");
+			//System.out.printf(" : "  + fg.blocks.size() + "\n");
+			change = true;
+			while(change) {
+				change = false;
+				for(int i = fg.blocks.size()-1 ; i >= 0  ; i--){
+					StatementNode stmt = fg.blocks.get(i);
+					//System.out.println(stmt.statementType);
+					//stmt.inPrime = stmt.getLiveIn();
+					//stmt.outPrime = stmt.getLiveOut();
+					//System.out.println(stmt.getSuccessors().size());
+					for(int j = 0; j < stmt.getSuccessors().size(); j++) {
+						StatementNode succJ = fg.blocks.get(stmt.getSuccessors().get(j));
+						listMergerFromTo(succJ.liveIn, stmt.liveOut);
+					}
+					
+					ArrayList<Integer> outMinusDef = ListDifference(stmt.liveOut, stmt.getDef());
+					ListUnion(stmt.getUse(),outMinusDef,stmt.liveIn);
+				}
+			}
+			return fg;
+		}
+
+	/**
+		 * @param liveIn
+		 * @param liveOut
+		 */
+		private void listMergerFromTo(ArrayList<Integer> lst1, ArrayList<Integer> lst2) {
+			// TODO Auto-generated method stub
+			for(int i = 0; i < lst1.size(); i++) {
+				if(!lst2.contains(lst1.get(i))) {
+					lst2.add(lst1.get(i));
+					change = true;
+				}
+			}
+		}
+
+	/**
+		 * @return
+		 */
+		/*
+		private boolean noChange() {
+			// TODO Auto-generated method stub
+			for(int i = 0 ; i < CFG.blocks.size(); i++){
+				StatementNode stmt = CFG.blocks.get(i);
+				if(stmt.inPrime.equals(stmt.getLiveIn()) && stmt.outPrime.equals(stmt.getLiveOut())){
+					return false;
+				}
+			}
+			return true;
+		}*/
+
+	/**
+		 * @param list1
+		 * @param list2
+		 * @return result : list1 UNION list2
+		 */
+		private void ListUnion(ArrayList<Integer> lst1, ArrayList<Integer> lst2, ArrayList<Integer>result) {
+			// TODO Auto-generated method stub
+			for(int i = 0; i < lst1.size(); i++) {
+				if(!result.contains(lst1.get(i))) {
+					result.add(lst1.get(i));
+					change = true;
+				}
+			}
+			for(int i = 0; i < lst2.size(); i++) {
+				if(!result.contains(lst2.get(i))) {
+					result.add(lst2.get(i));
+					change = true;
+				}
+			}
+		}
+
+	/**
+		 * @param list1
+		 * @param list2
+		 * @return list1-list2
+		 */
+		private ArrayList<Integer> ListDifference(ArrayList<Integer> lst1, ArrayList<Integer> lst2) {
+			// TODO Auto-generated method stub
+			ArrayList<Integer> result = new ArrayList<Integer>();
+			for(int i = 0; i < lst1.size(); i++) {
+				if(!lst2.contains(lst1.get(i))) {
+					result.add(lst1.get(i));
+				}
+			}
+			return result;
+		}
 
 }
