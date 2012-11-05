@@ -1,0 +1,48 @@
+MAIN
+  PRINT CALL
+    BEGIN
+      MOVE TEMP 21
+        BEGIN
+          MOVE TEMP 24 HALLOCATE 4
+          MOVE TEMP 25 HALLOCATE 8
+          HSTORE TEMP 24 0 Test_start
+          HSTORE TEMP 25 0 TEMP 24
+          HSTORE TEMP 25 4 0
+        RETURN TEMP 25
+        END
+      HLOAD TEMP 22 TEMP 21 0
+      HLOAD TEMP 23 TEMP 22 0
+    RETURN TEMP 23
+    END ( TEMP 21 )
+END
+
+Test_start [ 1 ]
+  BEGIN
+    HSTORE TEMP 0 4 11
+    MOVE TEMP 20 1
+    L0 NOOP
+    CJUMP LT
+      BEGIN
+        HLOAD TEMP 26 TEMP 0 4
+      RETURN TEMP 26
+      END 15 L1
+    CJUMP TEMP 20 L2
+    PRINT 1
+    JUMP L3
+    L2 NOOP
+    PRINT 0
+    L3 NOOP
+    MOVE TEMP 20 MINUS 1 TEMP 20
+    HSTORE TEMP 0 4 PLUS
+      BEGIN
+        HLOAD TEMP 27 TEMP 0 4
+      RETURN TEMP 27
+      END 1
+    JUMP L0
+    L1 NOOP
+  RETURN
+    BEGIN
+      HLOAD TEMP 28 TEMP 0 4
+    RETURN TEMP 28
+    END
+  END

@@ -1,0 +1,21 @@
+MAIN
+  PRINT CALL
+    BEGIN
+      MOVE TEMP 20
+        BEGIN
+          MOVE TEMP 23 HALLOCATE 4
+          MOVE TEMP 24 HALLOCATE 4
+          HSTORE TEMP 23 0 Test_start
+          HSTORE TEMP 24 0 TEMP 23
+        RETURN TEMP 24
+        END
+      HLOAD TEMP 21 TEMP 20 0
+      HLOAD TEMP 22 TEMP 21 0
+    RETURN TEMP 22
+    END ( TEMP 20 )
+END
+
+Test_start [ 1 ]
+  BEGIN
+  RETURN 857432
+  END

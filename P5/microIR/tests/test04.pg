@@ -1,0 +1,73 @@
+MAIN
+  PRINT CALL
+    BEGIN
+      MOVE TEMP 20
+        BEGIN
+          MOVE TEMP 23 HALLOCATE 4
+          MOVE TEMP 24 HALLOCATE 8
+          HSTORE TEMP 23 0 Test_start
+          HSTORE TEMP 24 0 TEMP 23
+          HSTORE TEMP 24 4 0
+        RETURN TEMP 24
+        END
+      HLOAD TEMP 21 TEMP 20 0
+      HLOAD TEMP 22 TEMP 21 0
+    RETURN TEMP 22
+    END ( TEMP 20 )
+END
+
+Test_start [ 1 ]
+  BEGIN
+    HSTORE TEMP 0 4
+      BEGIN
+        MOVE TEMP 25 10
+        MOVE TEMP 26 HALLOCATE TIMES PLUS TEMP 25 1 4
+        MOVE TEMP 27 4
+        L0 NOOP
+        CJUMP LT TEMP 27 TIMES PLUS TEMP 25 1 4 L1
+        HSTORE PLUS TEMP 26 TEMP 27 0 0
+        MOVE TEMP 27 PLUS TEMP 27 4
+        JUMP L0
+        L1 NOOP
+        HSTORE TEMP 26 0 TEMP 25
+      RETURN TEMP 26
+      END
+    HSTORE PLUS
+      BEGIN
+        HLOAD TEMP 28 TEMP 0 4
+      RETURN TEMP 28
+      END PLUS
+      BEGIN
+        MOVE TEMP 29 5
+        CJUMP LT TEMP 29 0 L2
+        ERROR
+        L2 NOOP
+        HLOAD TEMP 30 TEMP 28 0
+        CJUMP MINUS 1 LT TEMP 29 TEMP 30 L3
+        ERROR
+        L3 NOOP
+        MOVE TEMP 29 TIMES 4 TEMP 29
+      RETURN TEMP 29
+      END 4 0 40
+  RETURN
+    BEGIN
+      HLOAD TEMP 34 PLUS
+        BEGIN
+          HLOAD TEMP 31 TEMP 0 4
+        RETURN TEMP 31
+        END PLUS
+        BEGIN
+          MOVE TEMP 32 5
+          CJUMP LT TEMP 32 0 L4
+          ERROR
+          L4 NOOP
+          HLOAD TEMP 33 TEMP 31 0
+          CJUMP MINUS 1 LT TEMP 32 TEMP 33 L5
+          ERROR
+          L5 NOOP
+          MOVE TEMP 32 TIMES 4 TEMP 32
+        RETURN TEMP 32
+        END 4 0
+    RETURN TEMP 34
+    END
+  END
