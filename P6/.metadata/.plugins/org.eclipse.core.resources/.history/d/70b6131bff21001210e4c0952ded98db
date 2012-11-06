@@ -1,9 +1,0 @@
-/**
- * @author Akhilesh Godi (CS10B037)
- */
-
-public class Block {
-
-	private int blockNumber;
-	
-}

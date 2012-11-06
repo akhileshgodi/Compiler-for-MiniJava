@@ -4,7 +4,7 @@ import dataStructures.ControlFlowGraph;
 import syntaxtree.*;
 import visitor.*;
 
-public class Main {
+public class RegAlloc {
 
 	public static void main(String [] args) {
       try {

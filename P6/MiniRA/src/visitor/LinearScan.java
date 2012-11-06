@@ -5,10 +5,7 @@
 package visitor;
 import syntaxtree.*;
 
-import java.lang.Thread.State;
 import java.util.*;
-
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane.MaximizeAction;
 
 
 import dataStructures.ControlFlowGraph;
@@ -96,7 +93,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 			
 		}
 		
-		/*
+		/* For debugging
 		for(String label : registerAllocation.keySet()){
 			HashMap<Integer, Integer> regAlloc = registerAllocation.get(label);
 			HashMap<Integer, Integer> stAlloc = stackAllocation.get(label);
@@ -175,6 +172,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
       n.f1.accept(this);
       n.f2.accept(this);
       System.out.println("END ");
+      System.out.println(n.f4.tokenImage);
       n.f3.accept(this);
       n.f4.accept(this);
       return _ret;
@@ -393,8 +391,9 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 		  if(noOfParams < 0) noOfParams = 0;
 		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
 		  System.out.println("ALOAD v1 SPILLEDARG " + offset);
-		  System.out.printf("\tHLOAD v1 " + register2);
+		  System.out.printf("\tHLOAD v1 " + register2 + " ");
 		  n.f3.accept(this);
+		  System.out.printf("\tASTORE SPILLEDARG "+offset +" v1");
 	  }
 	  else {
 		  int noOfParams = presentCFG.itsParamsSize-4;
@@ -405,6 +404,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 		  System.out.println("\tALOAD v1 SPILLEDARG " + offset2);
 		  System.out.printf("\tHLOAD " + "v0 "  + "v1 "+ " ");
 		  n.f3.accept(this);
+		  System.out.println("ASTORE SPILLEDARG " + offset1 + " v0");
 	  }
       	  //n.f1.accept(this);
 	      //n.f2.accept(this);
@@ -445,7 +445,10 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     	  HAllocate nPrime = (HAllocate)n.f2.f0.choice;
     	  if(registerAllotted.containsKey(temp0)){
 	    	  if(nPrime.f1.f0.choice instanceof Temp) {
-	        	  Temp tmp = (Temp)nPrime.f1.f0.choice;
+	    		  //It generally never goes to the register actually! A valid code should go only to an integer!
+        		  //Should we actually flag an error instead??
+        		  // Syntactically allowed but semantically??
+	    		  Temp tmp = (Temp)nPrime.f1.f0.choice;
 	        	  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
 	        	  if(registerAllotted.containsKey(tempNo)){
 	        		  System.out.printf("MOVE "+ registers[registerAllotted.get(temp0)] + " HALLOCATE " + registers[registerAllotted.get(tempNo)]);
@@ -464,7 +467,8 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     	  }
     	  else {
     		  if(nPrime.f1.f0.choice instanceof Temp) {
-	        	  Temp tmp = (Temp)nPrime.f1.f0.choice;
+	        	  // Would this really happen?
+    			  Temp tmp = (Temp)nPrime.f1.f0.choice;
 	        	  int tempNo = Integer.parseInt(tmp.f1.f0.tokenImage);
 	        	  if(registerAllotted.containsKey(tempNo)){
 	        		  System.out.printf("MOVE v1 HALLOCATE " + registers[registerAllotted.get(tempNo)]);
@@ -577,7 +581,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     					int noOfParams = presentCFG.itsParamsSize-4;
     	        		if(noOfParams < 0) noOfParams = 0;
     	        		int offset3 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp3);
-    	        		System.out.println("ALOAD v1 SPILLEDARG " + offset3 );
+    	        		System.out.println("\tALOAD v1 SPILLEDARG " + offset3 );
     	        		noOfParams = presentCFG.itsParamsSize-4;
     	        		if(noOfParams < 0) noOfParams = 0;
     	        		int offset2 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
@@ -615,10 +619,10 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
         					int noOfParams = presentCFG.itsParamsSize-4;
         	        		if(noOfParams < 0) noOfParams = 0;
         	        		int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
-        	        		System.out.printf("MOVE v0");
-        	    			nPrime.f0.f0.accept(this);
+        	        		System.out.printf("MOVE v0 ");
+        	    			nPrime.f0.accept(this);
         	    			System.out.println("v1 " + registers[registerAllotted.get(temp2)] );
-        	    			System.out.printf("\t ASTORE SPILLEDARG " + offset + " v0");
+        	    			System.out.printf("\tASTORE SPILLEDARG " + offset + " v0");
             			}
         				else {
         					int noOfParams = presentCFG.itsParamsSize-4;
@@ -629,9 +633,9 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
         	        		int offset2 = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp2);
         	        		System.out.println("\tALOAD v0 SPILLEDARG " + offset2 );
         	        		System.out.printf("\tMOVE v0 ");
-        	    			nPrime.f0.f0.accept(this);
+        	    			nPrime.f0.accept(this);
         	    			System.out.println("v0 " + "v1 ");
-        	    			System.out.printf("\t ASTORE SPILLEDARG " + offset1 + " v0");
+        	    			System.out.printf("\tASTORE SPILLEDARG " + offset1 + " v0");
                 		}
         			}
         		
@@ -661,7 +665,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
         		  int noOfParams = presentCFG.itsParamsSize-4;
         		  if(noOfParams < 0) noOfParams = 0;
         		  int offset = noOfParams + presentCFG.noOfCalleeSaveRegisters + locationOnStack.get(temp1);
-        		  System.out.printf("ASTORE SPILLEDARG " + offset + " " +  register2);
+        		  System.out.printf("\tASTORE SPILLEDARG " + offset + " " +  register2);
         	  }
         	  else {
         		  int noOfParams = presentCFG.itsParamsSize-4;
@@ -688,6 +692,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
     	    	}
     	  }
     	  else{
+    		  //Again would it come here at all? If it does, are we to flag an error?
     		  Label l = (Label)nPrime.f0.choice;
     		  if(registerAllotted.containsKey(temp1)) {
     	    	  String temp1Location = registers[registerAllotted.get(temp1)];
@@ -1070,7 +1075,7 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
    
    	/*------------------------------------------------------------------------------------*/
 	/**
-	 * 
+	 * LINEAR SCAN REGISTER ALLOCATION! (Badly written code! :( - TODO : Need to put it in proper classes)
 	 */
 	private void LinearScanRegisterAllocation() {
 		active = new ArrayList<Integer>();

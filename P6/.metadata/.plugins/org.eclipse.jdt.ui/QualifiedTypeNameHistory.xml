@@ -26,5 +26,6 @@
 <fullyQualifiedTypeName name="dataStructures.StatementNode"/>
 <fullyQualifiedTypeName name="R"/>
 <fullyQualifiedTypeName name="java.util.HashMap"/>
+<fullyQualifiedTypeName name="syntaxtree.HAllocate"/>
 <fullyQualifiedTypeName name="java.lang.Integer"/>
 </qualifiedTypeNameHistroy>
