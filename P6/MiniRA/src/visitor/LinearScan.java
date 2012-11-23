@@ -52,6 +52,9 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 			}
 			presentCFG.startPoints = sortHashMap(presentCFG.startPoints);
 			presentCFG.endPoints = sortHashMap(presentCFG.endPoints);
+			System.out.println("---------------------------" + label + "------------------------------");
+			System.out.println("Start points : " + presentCFG.startPoints.entrySet());
+			System.out.println("Edd Points : " + presentCFG.endPoints.entrySet());
 			sortedStartPoint = new ArrayList<Integer>(presentCFG.startPoints.keySet());
 		    sortedEndPoint = new ArrayList<Integer>(presentCFG.endPoints.keySet());
 		    registerAllotted = new HashMap<Integer, Integer>();
@@ -92,14 +95,14 @@ public class LinearScan<R> implements GJNoArguVisitor<R> {
 			}
 			
 		}
-		/*
+		
 		for(String label : registerAllocation.keySet()){
 			HashMap<Integer, Integer> regAlloc = registerAllocation.get(label);
 			HashMap<Integer, Integer> stAlloc = stackAllocation.get(label);
  		    System.out.println("--------REGISTER ALLOCATION FOR : " + label +  "-------------------");
 			System.out.println(regAlloc.entrySet() + " \n" + stAlloc.entrySet());
 			System.out.println("----------------------------END---------------------------");
-		}*/
+		}
 		
 	}
 	

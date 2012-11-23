@@ -17,7 +17,7 @@ echo "Generating out files from your microIR now and comparing with expected out
 
 i=0
 j=0                                                
-for file in tests/1.pg                               
+for file in tests/*.pg                               
 do                                                      
      i=$((i+1))
      T=`basename $file | sed s/.pg//`                
